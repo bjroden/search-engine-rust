@@ -1,5 +1,6 @@
 use logos::{Logos};
 use regex::Regex;
+use lazy_static::lazy_static;
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token<'a> {
@@ -53,21 +54,24 @@ enum Token<'a> {
     Error,
 }
 
+lazy_static! {
+    static ref RE_CLEAN_LINK: Regex = Regex::new(r"(https://|http://|www|\.)").unwrap();
+    static ref RE_CLEAN_EMAIL: Regex = Regex::new(r"(@.*|<[^>]+>)").unwrap();
+    static ref RE_CLEAN_NUM: Regex = Regex::new(r"(,|-|\.\S*)").unwrap();
+    static ref RE_CLEAN_WORD: Regex = Regex::new(r"(\.|-|'|<[^>]+>)").unwrap();
+}
+
 fn clean_link(lex: &str) -> String {
-    let re = Regex::new(r"(https://|http://|www|\.)").unwrap();
-    return re.replace_all(lex, "").to_string()
+    RE_CLEAN_LINK.replace_all(lex, "").to_string()
 }
 fn clean_email(lex: &str) -> String {
-    let re = Regex::new(r"(@.*|<[^>]+>)").unwrap();
-    return re.replace_all(lex, "").to_string()
+    RE_CLEAN_EMAIL.replace_all(lex, "").to_string()
 }
 fn clean_number(lex: &str) -> String {
-    let re = Regex::new(r"(,|-|\.\S*)").unwrap();
-    return re.replace_all(lex, "").to_string()
+    RE_CLEAN_NUM.replace_all(lex, "").to_string()
 }
 fn clean_word(lex: &str) -> String {
-    let re = Regex::new(r"(\.|-|'|<[^>]+>)").unwrap();
-    return re.replace_all(lex, "").to_string()
+    RE_CLEAN_WORD.replace_all(lex, "").to_string()
 }
 
 pub fn parse(text: &str) -> Vec<String> {
