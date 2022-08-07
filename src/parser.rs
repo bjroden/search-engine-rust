@@ -55,19 +55,19 @@ enum Token<'a> {
 
 fn clean_link(lex: &str) -> String {
     let re = Regex::new(r"(https://|http://|www|\.)").unwrap();
-    return re.replace(lex, "").to_string()
+    return re.replace_all(lex, "").to_string()
 }
 fn clean_email(lex: &str) -> String {
     let re = Regex::new(r"(@.*|<[^>]+>)").unwrap();
-    return re.replace(lex, "").to_string()
+    return re.replace_all(lex, "").to_string()
 }
 fn clean_number(lex: &str) -> String {
     let re = Regex::new(r"(,|-|\.\S*)").unwrap();
-    return re.replace(lex, "").to_string()
+    return re.replace_all(lex, "").to_string()
 }
 fn clean_word(lex: &str) -> String {
     let re = Regex::new(r"(\.|-|'|<[^>]+>)").unwrap();
-    return re.replace(lex, "").to_string()
+    return re.replace_all(lex, "").to_string()
 }
 
 pub fn parse(text: &str) -> Vec<String> {
