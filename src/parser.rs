@@ -4,28 +4,28 @@ use lazy_static::lazy_static;
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token<'a> {
-   // CSS Tags take the form: element1, element2, .. elementN { ** CSS ** }
-   // Regex Checks for any amount of words with a comma, followed by another word, followed by { ** CSS ** }
-   // No return statement because these are not useful for indexing
-   // #[regex(r"([A-z0-9^,]*,\s*)*[A-z0-9]+\s*\{[^\}]+\}")]
-   // CSS,
+    // CSS Tags take the form: element1, element2, .. elementN { ** CSS ** }
+    // Regex Checks for any amount of words with a comma, followed by another word, followed by { ** CSS ** }
+    // No return statement because these are not useful for indexing
+    // #[regex(r"([A-z0-9^,]*,\s*)*[A-z0-9]+\s*\{[^\}]+\}")]
+    // CSS,
 
-   // HTML Elements take the forms <! **** COMMENT / DOCTYPE ****>, or <WORD attribute1=value attribute2=value>, or </WORD>
-   // Regex first checks for a "<", then checks if there is a "!" character, in which case it will read until the next ">", since these are either comments or DOCTYPE declarations.
-   // If no "!", it will look for "<" followed by an optional "/", followd by WORD, followed by any amount of "attribute=value", followed by optional whitespace and optional an "/", then ">"
-   // No return statement because these are not useful for indexing
-   #[regex(r"<(![^>]+|/?\w+((\s*[^\s=>])+=(\s*[^\s=>])+)*\s*/?)>")]
-   HTMLTAG,
+    // HTML Elements take the forms <! **** COMMENT / DOCTYPE ****>, or <WORD attribute1=value attribute2=value>, or </WORD>
+    // Regex first checks for a "<", then checks if there is a "!" character, in which case it will read until the next ">", since these are either comments or DOCTYPE declarations.
+    // If no "!", it will look for "<" followed by an optional "/", followd by WORD, followed by any amount of "attribute=value", followed by optional whitespace and optional an "/", then ">"
+    // No return statement because these are not useful for indexing
+    #[regex(r"<(![^>]+|/?\w+((\s*[^\s=>])+=(\s*[^\s=>])+)*\s*/?)>")]
+    HTMLTAG,
 
-   // Regex checks for hyperlinks, which are words starting with http://, https://, or www., and any number of non-whitespace, html tags, or "/" is found (since including the specific subdirectory of the site is not useful for indexing)
-   // The starting elements are then removed
-   #[regex(r"(htt(p|ps)://|www\.)\S+")]
-   HYPERLINK(&'a str),
+    // Regex checks for hyperlinks, which are words starting with http://, https://, or www., and any number of non-whitespace, html tags, or "/" is found (since including the specific subdirectory of the site is not useful for indexing)
+    // The starting elements are then removed
+    #[regex(r"(htt(p|ps)://|www\.)\S+")]
+    HYPERLINK(&'a str),
 
-   // Regex to check for emails, which take the form "word@word.word"
-   // HTML tags and everything following @ is removed since searching for "gmail" to get a specific email address is unlikely
-   #[regex(r"[A-z0-9]+@[A-z0-9]+\.[A-z0-9]+")]
-   EMAIL(&'a str),
+    // Regex to check for emails, which take the form "word@word.word"
+    // HTML tags and everything following @ is removed since searching for "gmail" to get a specific email address is unlikely
+    #[regex(r"[A-z0-9]+@[A-z0-9]+\.[A-z0-9]+")]
+    EMAIL(&'a str),
 
     // Regex to check for numbers, which include commas, decimals, and hyphens for phone numbers
     // Will not start with 0 since "01" and "1" should be the same in searches. Commas and hyphens are removed, as well as everything following the decimal since a search for "20.07" specifically would likely not be useful
