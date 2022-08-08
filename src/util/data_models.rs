@@ -1,10 +1,15 @@
 use std::ops::AddAssign;
 
 #[derive(Clone)]
-pub struct PostRecord {
+pub struct DocFrequency {
     pub doc_id: usize,
     pub raw_term_frequency: usize,
     pub relative_term_frequency: f64
+}
+
+pub struct PostRecord {
+    pub doc_id: String,
+    pub weight: usize
 }
 
 pub struct DictRecord {
@@ -20,12 +25,12 @@ pub struct MapRecord {
 
 #[derive(Clone)]
 pub struct GlobHTBucket {
-    files: Vec<PostRecord>
+    files: Vec<DocFrequency>
 }
 
 impl GlobHTBucket {
     pub fn new(doc_id: usize, raw_term_frequency: usize, relative_term_frequency: f64) -> Self {
-        Self { files: vec![PostRecord { doc_id, raw_term_frequency, relative_term_frequency }] }
+        Self { files: vec![DocFrequency { doc_id, raw_term_frequency, relative_term_frequency }] }
     }
 
     pub fn get_num_docs(&self) -> usize {
@@ -36,7 +41,7 @@ impl GlobHTBucket {
         self.files.iter().fold(0, |sum, file| sum + file.raw_term_frequency)
     }
 
-    pub fn get_files(&self) -> &Vec<PostRecord> {
+    pub fn get_files(&self) -> &Vec<DocFrequency> {
         &self.files
     }
 }

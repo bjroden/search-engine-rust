@@ -1,7 +1,7 @@
 use core::num;
 use std::{fs::{File, self, write, OpenOptions}, io::{Read, Error, Write, BufWriter}, env, iter::Map};
 
-use util::data_models::{GlobHTBucket, PostRecord, DictRecord, MapRecord};
+use util::data_models::{GlobHTBucket, DocFrequency, DictRecord, MapRecord};
 
 use crate::util::parser::parse;
 use crate::util::hashtable::HashTable;

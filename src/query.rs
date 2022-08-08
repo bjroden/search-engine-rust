@@ -3,8 +3,8 @@ use std::io::{Error, BufReader, Seek, SeekFrom, Read, BufRead};
 
 use clap::Parser;
 use util::parser::parse;
-use util::data_models::DictRecord;
-use util::hashtable::{hash_function, rehash};
+use util::data_models::{DictRecord, PostRecord};
+use util::hashtable::{hash_function, rehash, HashTable};
 use util::constants::*;
 
 mod util;
@@ -57,9 +57,44 @@ fn read_one_dict_line_from_hash(reader: &mut BufReader<File>, hash: usize) -> Re
     Ok(DictRecord { term: term.to_string(), num_docs: num_docs, post_line_start: start })
 }
 
+fn make_query_ht(post_records: &Vec<PostRecord>, expected_docs: usize) -> HashTable<usize> {
+    let mut query_ht = HashTable::new(expected_docs * 3);
+    for record in post_records {
+        query_ht.insert_combine(&record.doc_id.to_string(), record.weight);
+    }
+    query_ht
+}
+
+fn get_all_post_records(filedir: &str, dict_records: &Vec<DictRecord>) -> Result<Vec<PostRecord>, Error> {
+    let file = File::open(format!("{filedir}/post"))?;
+    let mut reader = BufReader::new(file);
+    let mut post_records = vec![];
+    for dict_record in dict_records {
+        post_records.append(&mut get_term_post_records(&mut reader, &dict_record)?);
+    }
+    Ok(post_records)
+}
+
+fn get_term_post_records(reader: &mut BufReader<File>, dict_record: &DictRecord) -> Result<Vec<PostRecord>, Error> {
+    let mut post_records = vec![];
+    reader.seek(SeekFrom::Start((dict_record.post_line_start * POST_RECORD_SIZE).try_into().unwrap()))?;
+    for _ in 0..dict_record.num_docs {
+        let mut record_str = String::new();
+        reader.read_line(&mut record_str)?;
+        let split_record: Vec<&str> = record_str.split_whitespace().collect();
+        let doc_id = split_record[0].to_string();
+        let weight: usize = split_record[1].parse().unwrap();
+        post_records.push(PostRecord { doc_id: doc_id, weight: weight })
+    }
+    Ok(post_records)
+}
+
 fn main() {
     let args = Args::parse();
     let tokens = get_query_tokens(&args.query);
     let dict_records = get_dict_records(&args.directory, &tokens).expect("Error reading dict file");
+    let expected_docs = dict_records.iter().fold(0, |sum, record| sum + record.num_docs);
+    let post_records = get_all_post_records(&args.directory, &dict_records).expect("Error reading post file");
+    let query_ht = make_query_ht(&post_records, expected_docs);
     println!("")
 }
