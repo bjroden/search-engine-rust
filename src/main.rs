@@ -1,16 +1,16 @@
-use std::{fs::{File, self}, io::Read, env};
-
-use hashtable::HashTable;
+use std::{fs::{File, self}, io::Read, env, hash::Hash};
 
 use crate::parser::parse;
+use crate::util::hashtable::HashTable;
+use crate::util::constants::*;
 
 mod parser;
-mod hashtable;
+mod util;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let indir = args.get(1).expect("Indir not given");
-    let mut doc_ht: HashTable<usize> = HashTable::new(50000);
+    let mut doc_ht: HashTable<usize> = HashTable::new(DOC_HT_SIZE);
     for file_path in fs::read_dir(indir).expect("Could not read indir") {
         println!("----- File Path: {:?} -----", file_path.as_ref().unwrap().file_name());
         let mut file = File::open(file_path.unwrap().path()).unwrap();
