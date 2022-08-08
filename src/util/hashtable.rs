@@ -86,7 +86,7 @@ where T: Clone + AddAssign
     }
 
     pub fn get_buckets(&self) -> &Vec<Option<TableEntry<T>>> {
-        return &self.buckets
+        &self.buckets
     }
 
 }
