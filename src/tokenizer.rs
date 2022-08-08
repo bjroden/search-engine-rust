@@ -110,7 +110,7 @@ fn main() {
                 map_files.push(MapRecord { doc_id: doc_id, file_name: file_name })
             }
             Err(e) => {
-                println!("Error while opening file: {}", e);
+                println!("Error while opening {}: {}", file_name, e);
                 continue
             }
         };
