@@ -2,14 +2,14 @@ use std::ops::AddAssign;
 
 #[derive(Clone)]
 pub struct PostRecord {
-    doc_id: usize,
-    rtf: usize
+    pub doc_id: usize,
+    pub rtf: usize
 }
 
 pub struct DictRecord {
-    term: String,
-    num_docs: usize,
-    post_line_start: usize
+    pub term: String,
+    pub num_docs: usize,
+    pub post_line_start: usize
 }
 
 pub struct MapRecord {
@@ -33,6 +33,10 @@ impl GlobHTBucket {
 
     pub fn get_total_frequency(&self) -> usize {
         self.files.iter().fold(0, |sum, file| sum + file.rtf)
+    }
+
+    pub fn get_files(&self) -> &Vec<PostRecord> {
+        &self.files
     }
 }
 

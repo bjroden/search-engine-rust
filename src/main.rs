@@ -1,3 +1,4 @@
+use core::num;
 use std::{fs::{File, self, write, OpenOptions}, io::{Read, Error, Write, BufWriter}, env, iter::Map};
 
 use util::data_models::{GlobHTBucket, PostRecord, DictRecord, MapRecord};
@@ -33,7 +34,23 @@ fn write_dict(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Err
             let num_docs = entry.value.get_num_docs();
             let post_line_start = count;
             writeln!(writer, "{} {} {}", term, num_docs, post_line_start)?;
-            count += 1;
+            count += num_docs;
+        }
+    }
+    Ok(())
+}
+
+fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize) -> Result<(), Error> {
+    let post_file = OpenOptions::new().write(true).create(true).open(format!("{outdir}/post"))?;
+    let mut writer = BufWriter::new(post_file);
+    for bucket in glob_ht.get_buckets() {
+        if let Some(entry) = bucket {
+            let idf = 1.0 + (total_docs as f64 / entry.value.get_num_docs() as f64).log10();
+            for file in entry.value.get_files() {
+                let doc_id = file.doc_id;
+                let weight = (file.rtf as f64 * idf * WEIGHT_MULTIPLIER) as usize; 
+                writeln!(writer, "{} {}", doc_id, weight)?;
+            }
         }
     }
     Ok(())
@@ -71,5 +88,6 @@ fn main() {
         };
     }
     write_dict(&outdir, &glob_ht).expect("Error writing dict file");
+    write_post(&outdir, &glob_ht, map_files.len()).expect("Error writing dict file");
     write_map(&outdir, map_files).expect("Error writing map file");
 }
