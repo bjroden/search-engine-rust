@@ -25,15 +25,21 @@ fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, doc_ht: &mut HashTable<u
 }
 
 fn write_dict(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Error> {
-    let dict_file = OpenOptions::new().write(true).create(true).open(format!("{outdir}/dict"))?;
+    let dict_file = OpenOptions::new().write(true).create(true).truncate(true).open(format!("{outdir}/dict"))?;
     let mut writer = BufWriter::new(dict_file);
-    let mut count = 0;
+    let mut count: usize = 0;
     for bucket in glob_ht.get_buckets() {
         if let Some(entry) = bucket {
             let term = &entry.key;
             let num_docs = entry.value.get_num_docs();
             let post_line_start = count;
-            writeln!(writer, "{} {} {}", term, num_docs, post_line_start)?;
+            writeln!(writer, 
+                    "{:<term_length$.term_length$} {:<num_docs_length$.num_docs_length$} {:<start_length$.start_length$}",
+                    term, num_docs.to_string(), post_line_start.to_string(),
+                    term_length = TERM_LENGTH,
+                    num_docs_length = NUMDOCS_LENGTH,
+                    start_length = START_LENGTH
+            )?;
             count += num_docs;
         }
     }
@@ -41,7 +47,7 @@ fn write_dict(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Err
 }
 
 fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize) -> Result<(), Error> {
-    let post_file = OpenOptions::new().write(true).create(true).open(format!("{outdir}/post"))?;
+    let post_file = OpenOptions::new().write(true).create(true).truncate(true).open(format!("{outdir}/post"))?;
     let mut writer = BufWriter::new(post_file);
     for bucket in glob_ht.get_buckets() {
         if let Some(entry) = bucket {
@@ -49,7 +55,12 @@ fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize
             for file in entry.value.get_files() {
                 let doc_id = file.doc_id;
                 let weight = (file.rtf as f64 * idf * WEIGHT_MULTIPLIER) as usize; 
-                writeln!(writer, "{} {}", doc_id, weight)?;
+                writeln!(writer,
+                    "{:<doc_id_length$.doc_id_length$} {:<weight_length$.weight_length$}",
+                    doc_id.to_string(), weight.to_string(),
+                    doc_id_length = DOC_ID_LENGTH,
+                    weight_length = WEIGHT_LENGTH
+                )?;
             }
         }
     }
@@ -57,10 +68,10 @@ fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize
 }
 
 fn write_map(outdir: &str, docs: Vec<MapRecord>) -> Result<(), Error> {
-    let map_file = OpenOptions::new().write(true).create(true).open(format!("{outdir}/map"))?;
+    let map_file = OpenOptions::new().write(true).create(true).truncate(true).open(format!("{outdir}/map"))?;
     let mut writer = BufWriter::new(map_file);
     for doc in docs {
-        writeln!(writer, "{}", doc.file_name)?;
+        writeln!(writer, "{:<length$.length$}", doc.file_name, length=MAP_NAME_LENGTH)?;
     }
     Ok(())
 }

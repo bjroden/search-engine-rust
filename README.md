@@ -9,7 +9,7 @@ better tokenizer performance than the old python program (my initial runs show a
 
 # TODO:
 
-- [ ] Add correct format for fixed-length files
+- [X] Add correct format for fixed-length files
 - [ ] Write query program
 - [ ] Reintroduce latin-1 encoding in addition to utf-8
 - [ ] Re-introduce CSS token rule (the version from the old program causes rustc to stack overflow - might be related to the curly brace capture group)
