@@ -33,20 +33,34 @@ fn write_dict(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Err
     let mut writer = BufWriter::new(dict_file);
     let mut count: usize = 0;
     for bucket in glob_ht.get_buckets() {
-        if let Some(entry) = bucket {
-            let term = &entry.key;
-            let num_docs = entry.value.get_num_docs();
-            let post_line_start = count;
-            writeln!(writer, 
-                    "{:<term_length$.term_length$} {:<num_docs_length$.num_docs_length$} {:<start_length$.start_length$}",
-                    term, num_docs.to_string(), post_line_start.to_string(),
-                    term_length = TERM_LENGTH,
-                    num_docs_length = NUMDOCS_LENGTH,
-                    start_length = START_LENGTH
-            )?;
-            count += num_docs;
+        match bucket {
+            Some(entry) => {
+                let term = &entry.key;
+                let num_docs = entry.value.get_num_docs();
+                let post_line_start = count;
+                let raw_term_frequency = entry.value.get_total_frequency();
+                if num_docs <= 1 && raw_term_frequency <= 1 {
+                    write_dict_line(&mut writer, "!DELETED", 0, 0)?; 
+                } 
+                else {
+                    write_dict_line(&mut writer, term, num_docs, post_line_start)?; 
+                    count += num_docs
+                }
+            }
+            None => write_dict_line(&mut writer, "!NULL", 0, 0)?
         }
     }
+    Ok(())
+}
+
+fn write_dict_line(writer: &mut BufWriter<File>, term: &str, num_docs: usize, start: usize) -> Result<(), Error> {
+    writeln!(writer, 
+            "{:<term_length$.term_length$} {:<num_docs_length$.num_docs_length$} {:<start_length$.start_length$}",
+            term, num_docs.to_string(), start.to_string(),
+            term_length = TERM_LENGTH,
+            num_docs_length = NUMDOCS_LENGTH,
+            start_length = START_LENGTH
+    )?;
     Ok(())
 }
 
