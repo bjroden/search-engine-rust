@@ -59,19 +59,23 @@ lazy_static! {
     static ref RE_CLEAN_EMAIL: Regex = Regex::new(r"(@.*|<[^>]+>)").unwrap();
     static ref RE_CLEAN_NUM: Regex = Regex::new(r"(,|-|\.\S*)").unwrap();
     static ref RE_CLEAN_WORD: Regex = Regex::new(r"(\.|-|'|<[^>]+>)").unwrap();
+    static ref RE_CLEAN_NON_ASCII: Regex = Regex::new(r"[^\x00-\x7F]").unwrap();
 }
 
+fn clean_non_ascii(lex: &str) -> String {
+    RE_CLEAN_NON_ASCII.replace_all(lex, "").to_string().to_ascii_lowercase()
+}
 fn clean_link(lex: &str) -> String {
-    RE_CLEAN_LINK.replace_all(lex, "").to_string()
+    clean_non_ascii(&RE_CLEAN_LINK.replace_all(lex, "").to_string())
 }
 fn clean_email(lex: &str) -> String {
-    RE_CLEAN_EMAIL.replace_all(lex, "").to_string()
+    clean_non_ascii(&RE_CLEAN_EMAIL.replace_all(lex, "").to_string())
 }
 fn clean_number(lex: &str) -> String {
-    RE_CLEAN_NUM.replace_all(lex, "").to_string()
+    clean_non_ascii(&RE_CLEAN_NUM.replace_all(lex, "").to_string())
 }
 fn clean_word(lex: &str) -> String {
-    RE_CLEAN_WORD.replace_all(lex, "").to_string()
+    clean_non_ascii(&RE_CLEAN_WORD.replace_all(lex, "").to_string())
 }
 
 pub fn parse(text: &str) -> Vec<String> {
