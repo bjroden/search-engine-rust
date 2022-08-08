@@ -12,13 +12,19 @@ pub struct DictRecord {
     post_line_start: usize
 }
 
+pub struct MapRecord {
+    pub doc_id: usize,
+    pub file_name: String
+}
+
+#[derive(Clone)]
 pub struct GlobHTBucket {
     files: Vec<PostRecord>
 }
 
 impl GlobHTBucket {
-    pub fn new(record: PostRecord) -> Self {
-        Self { files: vec![record] }
+    pub fn new(doc_id: usize, rtf: usize) -> Self {
+        Self { files: vec![PostRecord { doc_id, rtf }] }
     }
 
     pub fn get_num_docs(&self) -> usize {
