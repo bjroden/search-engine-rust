@@ -12,12 +12,16 @@ mod util;
 
 fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, doc_ht: &mut HashTable<usize>, file_contents: &str, doc_id: usize) {
     let tokens = parse(file_contents);
+    let mut token_count: usize = 0;
     for token in tokens {
-        doc_ht.insert_combine(token.as_str(), 1)
+        doc_ht.insert_combine(token.as_str(), 1);
+        token_count += 1;
     }
     for bucket in doc_ht.get_buckets() {
         if let Some(entry) = bucket  {
-            let file_record = GlobHTBucket::new(doc_id, entry.value);
+            let raw_term_frequency: usize = entry.value;
+            let relative_term_frequency: f64 = raw_term_frequency as f64 / token_count as f64;
+            let file_record = GlobHTBucket::new(doc_id, raw_term_frequency, relative_term_frequency);
             glob_ht.insert_combine(entry.key.as_str(), file_record);
         }
     }
@@ -54,7 +58,7 @@ fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize
             let idf = 1.0 + (total_docs as f64 / entry.value.get_num_docs() as f64).log10();
             for file in entry.value.get_files() {
                 let doc_id = file.doc_id;
-                let weight = (file.rtf as f64 * idf * WEIGHT_MULTIPLIER) as usize; 
+                let weight = (file.relative_term_frequency * idf * WEIGHT_MULTIPLIER) as usize; 
                 writeln!(writer,
                     "{:<doc_id_length$.doc_id_length$} {:<weight_length$.weight_length$}",
                     doc_id.to_string(), weight.to_string(),

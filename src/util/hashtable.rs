@@ -25,8 +25,6 @@ pub struct TableEntry<T> {
 
 pub struct HashTable<T> {
     size: usize,
-    unique_tokens: usize,
-    total_tokens: usize,
     buckets: Vec<Option<TableEntry<T>>>
 }
 
@@ -36,15 +34,11 @@ where T: Clone + AddAssign
     pub fn new(size: usize) -> Self {
         Self { 
             size: size, 
-            unique_tokens: 0, 
-            total_tokens: 0, 
             buckets: vec![None; size]
         }
     }
 
     pub fn reset(&mut self) {
-        self.unique_tokens = 0;
-        self.total_tokens = 0;
         for bucket in &mut self.buckets {
             *bucket = None;
         }
@@ -57,15 +51,8 @@ where T: Clone + AddAssign
                 else { break }
             }
             match self.buckets.get_mut(hash) {
-                Some(Some(bucket)) =>  { 
-                    bucket.value += value;
-                    self.total_tokens += 1;
-                    self.unique_tokens += 1;
-                }
-                Some(None) =>  { 
-                    self.buckets[hash] = Some(TableEntry { key: key.to_string(), value: value });
-                    self.total_tokens += 1;
-                }
+                Some(Some(bucket)) =>  {  bucket.value += value; }
+                Some(None) =>  {  self.buckets[hash] = Some(TableEntry { key: key.to_string(), value: value }); }
                 _ => ()
             }
         }
