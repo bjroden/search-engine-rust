@@ -88,6 +88,6 @@ fn main() {
         };
     }
     write_dict(&outdir, &glob_ht).expect("Error writing dict file");
-    write_post(&outdir, &glob_ht, map_files.len()).expect("Error writing dict file");
+    write_post(&outdir, &glob_ht, map_files.len()).expect("Error writing post file");
     write_map(&outdir, map_files).expect("Error writing map file");
 }
