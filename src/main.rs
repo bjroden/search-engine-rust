@@ -23,9 +23,25 @@ fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, doc_ht: &mut HashTable<u
     doc_ht.reset();
 }
 
-fn write_map(outdir: &str, docs: Vec<MapRecord>) -> Result<(), Error> {
+fn write_dict(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Error> {
     let dict_file = OpenOptions::new().write(true).create(true).open(format!("{outdir}/dict"))?;
     let mut writer = BufWriter::new(dict_file);
+    let mut count = 0;
+    for bucket in glob_ht.get_buckets() {
+        if let Some(entry) = bucket {
+            let term = &entry.key;
+            let num_docs = entry.value.get_num_docs();
+            let post_line_start = count;
+            writeln!(writer, "{} {} {}", term, num_docs, post_line_start)?;
+            count += 1;
+        }
+    }
+    Ok(())
+}
+
+fn write_map(outdir: &str, docs: Vec<MapRecord>) -> Result<(), Error> {
+    let map_file = OpenOptions::new().write(true).create(true).open(format!("{outdir}/map"))?;
+    let mut writer = BufWriter::new(map_file);
     for doc in docs {
         writeln!(writer, "{}", doc.file_name)?;
     }
@@ -54,5 +70,6 @@ fn main() {
             }
         };
     }
+    write_dict(&outdir, &glob_ht).expect("Error writing dict file");
     write_map(&outdir, map_files).expect("Error writing map file");
 }
