@@ -7,15 +7,33 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'search-engine-rust'",
+            "name": "Debug executable 'tokenizer'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=search-engine-rust",
-                    "--package=search-engine-rust"
+                    "--bin=tokenizer",
+                    "--package=search-engine-rust",
                 ],
                 "filter": {
-                    "name": "search-engine-rust",
+                    "name": "tokenizer",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'query'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=query",
+                    "--package=search-engine-rust",
+                ],
+                "filter": {
+                    "name": "query",
                     "kind": "bin"
                 }
             },

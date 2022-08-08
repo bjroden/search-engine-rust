@@ -3,11 +3,10 @@ use std::{fs::{File, self, write, OpenOptions}, io::{Read, Error, Write, BufWrit
 
 use util::data_models::{GlobHTBucket, PostRecord, DictRecord, MapRecord};
 
-use crate::parser::parse;
+use crate::util::parser::parse;
 use crate::util::hashtable::HashTable;
 use crate::util::constants::*;
 
-mod parser;
 mod util;
 
 fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, doc_ht: &mut HashTable<usize>, file_contents: &str, doc_id: usize) {
