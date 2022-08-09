@@ -1,9 +1,8 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::fs::File;
-use std::hash::Hash;
-use std::io::{Error, BufReader, Seek, SeekFrom, Read, BufRead};
-use std::{vec, num};
+use std::io::{Error, BufReader, Seek, SeekFrom, BufRead};
+use std::vec;
 
 use clap::Parser;
 use util::parser::parse;

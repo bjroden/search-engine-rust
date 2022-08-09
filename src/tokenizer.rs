@@ -1,7 +1,6 @@
-use core::num;
-use std::{fs::{File, self, write, OpenOptions}, io::{Read, Error, Write, BufWriter}, env, iter::Map};
+use std::{fs::{File, self, OpenOptions}, io::{Error, Write, BufWriter}, env};
 
-use util::{data_models::{GlobHTBucket, DocFrequency, DictRecord, MapRecord}, hashtable::TableEntry};
+use util::{data_models::{GlobHTBucket, DocFrequency, MapRecord}, hashtable::TableEntry};
 use encoding::{all::ISO_8859_1, Encoding, DecoderTrap};
 
 use crate::util::parser::parse;
