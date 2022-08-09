@@ -71,14 +71,7 @@ fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize
             if !entry.value.is_rare() {
                 let idf = 1.0 + (total_docs as f64 / entry.value.get_num_docs() as f64).log10();
                 for file in entry.value.get_files() {
-                    let doc_id = file.doc_id;
-                    let weight = (file.relative_term_frequency * idf * WEIGHT_MULTIPLIER) as usize; 
-                    writeln!(writer,
-                        "{:<doc_id_length$.doc_id_length$} {:<weight_length$.weight_length$}",
-                        doc_id.to_string(), weight.to_string(),
-                        doc_id_length = DOC_ID_LENGTH,
-                        weight_length = WEIGHT_LENGTH
-                    )?;
+                    write_post_line(&mut writer, file, idf)?;
                 }
             }
         }
@@ -86,12 +79,30 @@ fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize
     Ok(())
 }
 
+fn write_post_line(writer: &mut BufWriter<File>, file: &DocFrequency, idf: f64) -> Result<(), Error> {
+    let doc_id = file.doc_id;
+    let weight = (file.relative_term_frequency * idf * WEIGHT_MULTIPLIER) as usize; 
+    writeln!(writer,
+        "{:<doc_id_length$.doc_id_length$} {:<weight_length$.weight_length$}",
+        doc_id.to_string(), weight.to_string(),
+        doc_id_length = DOC_ID_LENGTH,
+        weight_length = WEIGHT_LENGTH
+    )?;
+    Ok(())
+}
+
+
 fn write_map(outdir: &str, docs: Vec<MapRecord>) -> Result<(), Error> {
     let map_file = OpenOptions::new().write(true).create(true).truncate(true).open(format!("{outdir}/map"))?;
     let mut writer = BufWriter::new(map_file);
     for doc in docs {
-        writeln!(writer, "{:<length$.length$}", doc.file_name, length=MAP_NAME_LENGTH)?;
+        write_map_line(&mut writer, &doc.file_name)?;
     }
+    Ok(())
+}
+
+fn write_map_line(writer: &mut BufWriter<File>, name: &str) -> Result<(), Error> {
+    writeln!(writer, "{:<length$.length$}", name, length=MAP_NAME_LENGTH)?;
     Ok(())
 }
 
