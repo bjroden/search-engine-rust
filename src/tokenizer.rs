@@ -1,7 +1,7 @@
 use core::num;
 use std::{fs::{File, self, write, OpenOptions}, io::{Read, Error, Write, BufWriter}, env, iter::Map};
 
-use util::data_models::{GlobHTBucket, DocFrequency, DictRecord, MapRecord};
+use util::{data_models::{GlobHTBucket, DocFrequency, DictRecord, MapRecord}, hashtable::TableEntry};
 use encoding::{all::ISO_8859_1, Encoding, DecoderTrap};
 
 use crate::util::parser::parse;
@@ -33,34 +33,33 @@ fn write_dict(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Err
     let mut writer = BufWriter::new(dict_file);
     let mut count: usize = 0;
     for bucket in glob_ht.get_buckets() {
-        match bucket {
-            Some(entry) => {
-                let term = &entry.key;
-                let num_docs = entry.value.get_num_docs();
-                let post_line_start = count;
-                if entry.value.is_rare() {
-                    write_dict_line(&mut writer, "!DELETED", 0, 0)?; 
-                } 
-                else {
-                    write_dict_line(&mut writer, term, num_docs, post_line_start)?; 
-                    count += num_docs
-                }
-            }
-            None => write_dict_line(&mut writer, "!NULL", 0, 0)?
-        }
+        count = write_dict_line(&mut writer, bucket, count)?;
     }
     Ok(())
 }
 
-fn write_dict_line(writer: &mut BufWriter<File>, term: &str, num_docs: usize, start: usize) -> Result<(), Error> {
+fn write_dict_line(writer: &mut BufWriter<File>, bucket: &Option<TableEntry<GlobHTBucket>>, count: usize) -> Result<usize, Error> {
+    let mut new_count = count;
+    let (term, num_docs, post_line_start) = match bucket {
+        Some(entry) => {
+            if entry.value.is_rare() {
+                ("!DELETED", 0, 0)
+            } 
+            else {
+                new_count += entry.value.get_num_docs();
+                (entry.key.as_str(), entry.value.get_num_docs(), count)
+            }
+        }
+        None => ("!NULL", 0, 0)
+    };
     writeln!(writer, 
             "{:<term_length$.term_length$} {:<num_docs_length$.num_docs_length$} {:<start_length$.start_length$}",
-            term, num_docs.to_string(), start.to_string(),
+            term, num_docs.to_string(), post_line_start.to_string(),
             term_length = TERM_LENGTH,
             num_docs_length = NUMDOCS_LENGTH,
             start_length = START_LENGTH
     )?;
-    Ok(())
+    Ok(new_count)
 }
 
 fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize) -> Result<(), Error> {
