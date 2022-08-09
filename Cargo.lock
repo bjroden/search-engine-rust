@@ -327,6 +327,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "query"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "util",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -351,19 +359,6 @@ name = "regex-syntax"
 version = "0.6.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
-
-[[package]]
-name = "search-engine-rust"
-version = "0.1.0"
-dependencies = [
- "clap",
- "encoding",
- "hex",
- "lazy_static",
- "logos",
- "regex",
- "sha2",
-]
 
 [[package]]
 name = "sha2"
@@ -409,6 +404,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1141d4d61095b28419e22cb0bbf02755f5e54e0526f97f1e3d1d160e60885fb"
 
 [[package]]
+name = "tokenizer"
+version = "0.1.0"
+dependencies = [
+ "encoding",
+ "util",
+]
+
+[[package]]
 name = "typenum"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -419,6 +422,17 @@ name = "unicode-ident"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4f5b37a154999a8f3f98cc23a628d850e154479cd94decf3414696e12e31aaf"
+
+[[package]]
+name = "util"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "lazy_static",
+ "logos",
+ "regex",
+ "sha2",
+]
 
 [[package]]
 name = "version_check"

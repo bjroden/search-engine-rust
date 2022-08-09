@@ -10,8 +10,6 @@ use util::data_models::{DictRecord, PostRecord};
 use util::hashtable::{hash_function, rehash, HashTable};
 use util::constants::*;
 
-mod util;
-
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {

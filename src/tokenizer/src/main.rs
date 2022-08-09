@@ -3,11 +3,9 @@ use std::{fs::{File, self, OpenOptions}, io::{Error, Write, BufWriter}, env};
 use util::{data_models::{GlobHTBucket, DocFrequency, MapRecord}, hashtable::TableEntry};
 use encoding::{all::ISO_8859_1, Encoding, DecoderTrap};
 
-use crate::util::parser::parse;
-use crate::util::hashtable::HashTable;
-use crate::util::constants::*;
-
-mod util;
+use util::parser::parse;
+use util::hashtable::HashTable;
+use util::constants::*;
 
 fn read_latin1_file(file_path: &str) -> Result<String, Error> {
     let bytes = fs::read(file_path)?;
