@@ -86,7 +86,7 @@ fn get_term_post_records(reader: &mut BufReader<File>, dict_record: &DictRecord)
         let mut record_str = String::new();
         reader.read_line(&mut record_str)?;
         let split_record: Vec<&str> = record_str.split_whitespace().collect();
-        let doc_id = split_record[0].to_string();
+        let doc_id = split_record[0].parse().unwrap();
         let weight: usize = split_record[1].parse().unwrap();
         post_records.push(PostRecord { doc_id: doc_id, weight: weight })
     }
@@ -101,10 +101,10 @@ fn get_sorted_results(query_ht: HashTable<usize>, num_results: usize) -> Vec<Pos
                 Some(Reverse(heap_head)) => {
                     if heap_head.weight < entry.value {
                         if heap.len() + 1 > num_results { heap.pop(); }
-                        heap.push(Reverse(PostRecord { doc_id: entry.key.to_string(), weight: entry.value }));
+                        heap.push(Reverse(PostRecord { doc_id: entry.key.parse().unwrap(), weight: entry.value }));
                     }
                 }
-                None => heap.push(Reverse(PostRecord { doc_id: entry.key.to_string(), weight: entry.value }))
+                None => heap.push(Reverse(PostRecord { doc_id: entry.key.parse().unwrap(), weight: entry.value }))
             }
         }
     }
@@ -118,6 +118,28 @@ fn get_sorted_results(query_ht: HashTable<usize>, num_results: usize) -> Vec<Pos
     sorted
 }
 
+struct NamedResult {
+    name: String,
+    weight: usize
+}
+
+fn get_named_results(filedir: &str, results: Vec<PostRecord>) -> Result<Vec<NamedResult>, Error> {
+    let mut named_results = vec![];
+    let file = File::open(format!("{filedir}/map"))?;
+    let mut reader = BufReader::new(file);
+    for result in results {
+        named_results.push(NamedResult { name: get_doc_name(&mut reader, result.doc_id)?, weight: result.weight })
+    }
+    Ok(named_results)
+}
+
+fn get_doc_name(reader: &mut BufReader<File>, doc_id: usize) -> Result<String, Error> {
+    let mut name = String::new();
+    reader.seek(SeekFrom::Start((doc_id * MAP_RECORD_SIZE).try_into().unwrap()))?;
+    reader.read_line(&mut name)?;
+    Ok(name.trim().to_string())
+}
+
 fn main() {
     let args = Args::parse();
     let tokens = get_query_tokens(&args.query);
@@ -126,4 +148,7 @@ fn main() {
     let post_records = get_all_post_records(&args.directory, &dict_records).expect("Error reading post file");
     let query_ht = make_query_ht(&post_records, expected_docs);
     let sorted_results = get_sorted_results(query_ht, args.num_results);
+    for (num, result) in get_named_results(&args.directory, sorted_results).expect("Error reading map file").iter().enumerate() {
+        println!("{}: {} (weight: {})", num + 1, result.name, result.weight);
+    }
 }

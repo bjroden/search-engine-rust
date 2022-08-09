@@ -10,7 +10,7 @@ pub struct DocFrequency {
 
 #[derive(Eq, Clone)]
 pub struct PostRecord {
-    pub doc_id: String,
+    pub doc_id: usize,
     pub weight: usize
 }
 
