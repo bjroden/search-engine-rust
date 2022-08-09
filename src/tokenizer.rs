@@ -10,12 +10,33 @@ use crate::util::constants::*;
 
 mod util;
 
-fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, doc_ht: &mut HashTable<usize>, file_contents: &str, doc_id: usize) {
-    let tokens = parse(file_contents);
+fn read_latin1_file(file_path: &str) -> Result<String, Error> {
+    let bytes = fs::read(file_path)?;
+    let contents = match ISO_8859_1.decode(&bytes, DecoderTrap::Ignore) {
+        Ok(string) => string,
+        Err(str) => str.into_owned()
+    };
+    Ok(contents)
+}
+
+fn create_stop_ht(stop_path: &str) -> Result<HashTable<usize>, Error> {
+    let stop_words = parse(&read_latin1_file(stop_path)?);
+    let mut stop_ht: HashTable<usize> = HashTable::new(stop_words.len() * 3);
+    for word in stop_words {
+        stop_ht.insert_combine(&word, 1);
+    }
+    Ok(stop_ht)
+}
+
+fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, doc_ht: &mut HashTable<usize>, stop_ht: &HashTable<usize>, file_path: &str, doc_id: usize) -> Result<(), Error> {
+    let file_contents = read_latin1_file(file_path)?;
+    let tokens = parse(&file_contents);
     let mut token_count: usize = 0;
     for token in tokens {
-        doc_ht.insert_combine(token.as_str(), 1);
-        token_count += 1;
+        if !stop_ht.intable(&token) {
+            doc_ht.insert_combine(token.as_str(), 1);
+            token_count += 1;
+        }
     }
     for bucket in doc_ht.get_buckets() {
         if let Some(entry) = bucket  {
@@ -26,6 +47,7 @@ fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, doc_ht: &mut HashTable<u
         }
     }
     doc_ht.reset();
+    Ok(())
 }
 
 fn write_dict(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Error> {
@@ -109,24 +131,22 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let indir = args.get(1).expect("Indir not given");
     let outdir = args.get(2).expect("Outdir not given");
+    let stop_path = match args.get(3) {
+        Some(path) => path,
+        None => "./stopwords"
+    };
     let mut doc_ht: HashTable<usize> = HashTable::new(DOC_HT_SIZE);
     let mut glob_ht: HashTable<GlobHTBucket> = HashTable::new(GLOB_HT_SIZE);
+    let stop_ht: HashTable<usize> = create_stop_ht(&stop_path).expect("Error opening stopfile");
     let mut map_files: Vec<MapRecord> = vec![];
     for (doc_id, file_path) in fs::read_dir(indir).expect("Could not read indir").enumerate() {
         let file_name = file_path.as_ref().unwrap().file_name().into_string().unwrap();
-        let bytes = match fs::read(file_path.as_ref().unwrap().path()) {
-            Ok(contents) => contents,
-            Err(e) => {
-                println!("Could not open file {:?}: {}", file_name, e);
-                continue;
-            }
+        let file_path_str = file_path.unwrap().path().to_str().unwrap().to_owned();
+        map_files.push(MapRecord { doc_id: doc_id, file_name: file_name.clone() });
+        if let Err(e) = tokenize_file(&mut glob_ht, &mut doc_ht, &stop_ht, &file_path_str, doc_id) {
+            println!("Could not read file {}: {}", &file_name, e);
+            continue;
         };
-        let contents = match ISO_8859_1.decode(&bytes, DecoderTrap::Ignore) {
-            Ok(string) => string,
-            Err(str) => str.into_owned()
-        };
-        tokenize_file(&mut glob_ht, &mut doc_ht, &contents, doc_id);
-        map_files.push(MapRecord { doc_id: doc_id, file_name: file_name });
     }
     write_dict(&outdir, &glob_ht).expect("Error writing dict file");
     write_post(&outdir, &glob_ht, map_files.len()).expect("Error writing post file");
