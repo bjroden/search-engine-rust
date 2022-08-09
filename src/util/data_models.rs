@@ -1,4 +1,5 @@
 use std::ops::AddAssign;
+use std::cmp::Ordering;
 
 #[derive(Clone)]
 pub struct DocFrequency {
@@ -7,9 +8,28 @@ pub struct DocFrequency {
     pub relative_term_frequency: f64
 }
 
+#[derive(Eq, Clone)]
 pub struct PostRecord {
     pub doc_id: String,
     pub weight: usize
+}
+
+impl Ord for PostRecord {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.weight.cmp(&other.weight)
+    }
+}
+
+impl PartialOrd for PostRecord {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.weight.cmp(&other.weight))
+    }
+}
+
+impl PartialEq for PostRecord {
+    fn eq(&self, other: &Self) -> bool {
+        self.weight == other.weight
+    }
 }
 
 pub struct DictRecord {

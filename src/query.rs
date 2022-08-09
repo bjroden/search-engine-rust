@@ -1,5 +1,9 @@
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 use std::fs::File;
+use std::hash::Hash;
 use std::io::{Error, BufReader, Seek, SeekFrom, Read, BufRead};
+use std::{vec, num};
 
 use clap::Parser;
 use util::parser::parse;
@@ -89,6 +93,31 @@ fn get_term_post_records(reader: &mut BufReader<File>, dict_record: &DictRecord)
     Ok(post_records)
 }
 
+fn get_sorted_results(query_ht: HashTable<usize>, num_results: usize) -> Vec<PostRecord> {
+    let mut heap: BinaryHeap<Reverse<PostRecord>> = BinaryHeap::new();
+    for bucket in query_ht.get_buckets() {
+        if let Some(entry) = bucket {
+            match heap.peek() {
+                Some(Reverse(heap_head)) => {
+                    if heap_head.weight < entry.value {
+                        if heap.len() + 1 > num_results { heap.pop(); }
+                        heap.push(Reverse(PostRecord { doc_id: entry.key.to_string(), weight: entry.value }));
+                    }
+                }
+                None => heap.push(Reverse(PostRecord { doc_id: entry.key.to_string(), weight: entry.value }))
+            }
+        }
+    }
+    let rev_sorted = heap.into_sorted_vec();
+    let mut sorted = vec![];
+    for rev_elem in rev_sorted {
+        if let Reverse(elem) = rev_elem {
+            sorted.push(elem.clone());
+        }
+    }
+    sorted
+}
+
 fn main() {
     let args = Args::parse();
     let tokens = get_query_tokens(&args.query);
@@ -96,5 +125,5 @@ fn main() {
     let expected_docs = dict_records.iter().fold(0, |sum, record| sum + record.num_docs);
     let post_records = get_all_post_records(&args.directory, &dict_records).expect("Error reading post file");
     let query_ht = make_query_ht(&post_records, expected_docs);
-    println!("")
+    let sorted_results = get_sorted_results(query_ht, args.num_results);
 }
