@@ -64,6 +64,10 @@ impl GlobHTBucket {
     pub fn get_files(&self) -> &Vec<DocFrequency> {
         &self.files
     }
+
+    pub fn is_rare(&self) -> bool {
+        self.get_num_docs() <= 1 && self.get_total_frequency() <= 1
+    }
 }
 
 impl AddAssign for GlobHTBucket {

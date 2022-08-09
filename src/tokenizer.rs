@@ -38,8 +38,7 @@ fn write_dict(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Err
                 let term = &entry.key;
                 let num_docs = entry.value.get_num_docs();
                 let post_line_start = count;
-                let raw_term_frequency = entry.value.get_total_frequency();
-                if num_docs <= 1 && raw_term_frequency <= 1 {
+                if entry.value.is_rare() {
                     write_dict_line(&mut writer, "!DELETED", 0, 0)?; 
                 } 
                 else {
@@ -69,16 +68,18 @@ fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize
     let mut writer = BufWriter::new(post_file);
     for bucket in glob_ht.get_buckets() {
         if let Some(entry) = bucket {
-            let idf = 1.0 + (total_docs as f64 / entry.value.get_num_docs() as f64).log10();
-            for file in entry.value.get_files() {
-                let doc_id = file.doc_id;
-                let weight = (file.relative_term_frequency * idf * WEIGHT_MULTIPLIER) as usize; 
-                writeln!(writer,
-                    "{:<doc_id_length$.doc_id_length$} {:<weight_length$.weight_length$}",
-                    doc_id.to_string(), weight.to_string(),
-                    doc_id_length = DOC_ID_LENGTH,
-                    weight_length = WEIGHT_LENGTH
-                )?;
+            if !entry.value.is_rare() {
+                let idf = 1.0 + (total_docs as f64 / entry.value.get_num_docs() as f64).log10();
+                for file in entry.value.get_files() {
+                    let doc_id = file.doc_id;
+                    let weight = (file.relative_term_frequency * idf * WEIGHT_MULTIPLIER) as usize; 
+                    writeln!(writer,
+                        "{:<doc_id_length$.doc_id_length$} {:<weight_length$.weight_length$}",
+                        doc_id.to_string(), weight.to_string(),
+                        doc_id_length = DOC_ID_LENGTH,
+                        weight_length = WEIGHT_LENGTH
+                    )?;
+                }
             }
         }
     }
