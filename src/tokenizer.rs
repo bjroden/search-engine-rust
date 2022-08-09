@@ -2,6 +2,7 @@ use core::num;
 use std::{fs::{File, self, write, OpenOptions}, io::{Read, Error, Write, BufWriter}, env, iter::Map};
 
 use util::data_models::{GlobHTBucket, DocFrequency, DictRecord, MapRecord};
+use encoding::{all::ISO_8859_1, Encoding, DecoderTrap};
 
 use crate::util::parser::parse;
 use crate::util::hashtable::HashTable;
@@ -101,19 +102,20 @@ fn main() {
     let mut glob_ht: HashTable<GlobHTBucket> = HashTable::new(GLOB_HT_SIZE);
     let mut map_files: Vec<MapRecord> = vec![];
     for (doc_id, file_path) in fs::read_dir(indir).expect("Could not read indir").enumerate() {
-        let mut file = File::open(file_path.as_ref().unwrap().path()).unwrap();
         let file_name = file_path.as_ref().unwrap().file_name().into_string().unwrap();
-        let mut contents = String::new();
-        match file.read_to_string(&mut contents) {
-            Ok(_) => {
-                tokenize_file(&mut glob_ht, &mut doc_ht, &contents, doc_id);
-                map_files.push(MapRecord { doc_id: doc_id, file_name: file_name })
-            }
+        let bytes = match fs::read(file_path.as_ref().unwrap().path()) {
+            Ok(contents) => contents,
             Err(e) => {
-                println!("Error while opening {}: {}", file_name, e);
-                continue
+                println!("Could not open file {:?}: {}", file_name, e);
+                continue;
             }
         };
+        let contents = match ISO_8859_1.decode(&bytes, DecoderTrap::Ignore) {
+            Ok(string) => string,
+            Err(str) => str.into_owned()
+        };
+        tokenize_file(&mut glob_ht, &mut doc_ht, &contents, doc_id);
+        map_files.push(MapRecord { doc_id: doc_id, file_name: file_name });
     }
     write_dict(&outdir, &glob_ht).expect("Error writing dict file");
     write_post(&outdir, &glob_ht, map_files.len()).expect("Error writing post file");

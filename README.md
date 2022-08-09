@@ -11,7 +11,7 @@ better tokenizer performance than the old python program (my initial runs show a
 
 - [X] Add correct format for fixed-length files
 - [X] Write query program
-- [ ] Reintroduce latin-1 encoding in addition to utf-8
+- [X] Reintroduce latin-1 encoding in addition to utf-8
 - [ ] Re-introduce CSS token rule (the version from the old program causes rustc to stack overflow - might be related to the curly brace capture group)
 - [ ] Optional: let hashtable re-index itself. The python program never did this since it has to write its contents to the dict file and the query program
       has to know the table size, but a 4th file with the table size or a line count on the dict file could probably be introduced.
