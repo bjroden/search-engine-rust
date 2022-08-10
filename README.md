@@ -7,6 +7,23 @@ with the old program, I noticed that there were a lot of things about the code s
 I tried refactoring it at first, but I opted for a rewrite instead since the different language choice also allows for much
 better tokenizer performance than the old python program (my initial runs show around a 15x speed increase).
 
+# Usage
+
+There are three main programs: the tokenizer, the query program, and the server.
+
+### Tokenizer
+The tokenizer will take an input directory, an output directory, and a stopword file as inputs. All files in the input will be indexed and a file mapping will be made
+in the output directory, which can then be used by the other two programs. The stopwords file is a list of common words that you do not wish to be indexed.
+
+### Query
+A CLI to get the top file results for each query. Pass it the directory for the file mapping with the -d flag and the string query with the -q flag.
+The number of results can also be adjusted with -n.
+
+### Server
+
+A server that outputs a json mapping of the top results for a query, designed for use with [this frontend](https://github.com/bjroden/search-engine-angular-frontend).
+The file mapping directory can be specified with the QUERY_FILES_DIR environment variable.
+
 # TODO:
 
 - [X] Add correct format for fixed-length files
