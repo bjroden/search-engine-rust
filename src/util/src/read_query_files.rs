@@ -6,7 +6,7 @@ use std::io::{Error, BufReader, Seek, SeekFrom, BufRead};
 use std::vec;
 
 use crate::parser::parse;
-use crate::data_models::{DictRecord, PostRecord};
+use crate::data_models::{DictRecord, PostRecord, NamedResult};
 use crate::hashtable::{hash_function, rehash, HashTable};
 use crate::constants::*;
 
@@ -122,11 +122,6 @@ fn get_doc_name(reader: &mut BufReader<File>, doc_id: usize) -> Result<String, E
     reader.seek(SeekFrom::Start((doc_id * MAP_RECORD_SIZE).try_into().unwrap()))?;
     reader.read_line(&mut name)?;
     Ok(name.trim().to_string())
-}
-
-pub struct NamedResult {
-    pub name: String,
-    pub weight: usize
 }
 
 pub fn make_query(query: &str, filedir: &str, num_results: usize) -> Result<Vec<NamedResult>, Error> {

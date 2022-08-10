@@ -1,6 +1,11 @@
 use std::ops::AddAssign;
 use std::cmp::Ordering;
 
+pub struct NamedResult {
+    pub name: String,
+    pub weight: usize
+}
+
 #[derive(Clone)]
 pub struct DocFrequency {
     pub doc_id: usize,
