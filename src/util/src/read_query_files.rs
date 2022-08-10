@@ -19,19 +19,22 @@ fn get_dict_records(filedir: &str, tokens: &Vec<String>) -> Result<Vec<DictRecor
     let file = File::open(format!("{filedir}/dict"))?;
     let mut reader = BufReader::new(file);
     for token in tokens {
-        records.push(get_one_dict_record(&mut reader, token)?);
+        if let Some(record) = get_one_dict_record(&mut reader, token)? {
+            records.push(record);
+        }
     }
     Ok(records)
 }
 
-fn get_one_dict_record(reader: &mut BufReader<File>, token: &str) -> Result<DictRecord, Error> {
+fn get_one_dict_record(reader: &mut BufReader<File>, token: &str) -> Result<Option<DictRecord>, Error> {
     let mut hash = hash_function(token, &GLOB_HT_SIZE).unwrap();
     let mut record = read_one_dict_line_from_hash(reader, hash)?;
     while record.term != "!NULL" && record.term != token { 
         hash = rehash(&hash, &GLOB_HT_SIZE);
         record = read_one_dict_line_from_hash(reader, hash)?;
     }
-    Ok(record)
+    if record.term.starts_with("!") { return Ok(None); }
+    Ok(Some(record))
 }
 
 fn read_one_dict_line_from_hash(reader: &mut BufReader<File>, hash: usize) -> Result<DictRecord, Error> {
