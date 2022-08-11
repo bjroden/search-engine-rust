@@ -1,12 +1,12 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use std::fs::File;
+use std::fs::{File, self};
 use std::io::{Error, BufReader, Seek, SeekFrom, BufRead};
 
 use std::vec;
 
 use crate::parser::parse;
-use crate::data_models::{DictRecord, PostRecord, NamedResult};
+use crate::data_models::{DictRecord, PostRecord, NamedResult, FileSizes};
 use crate::hashtable::{hash_function, rehash, HashTable};
 use crate::constants::*;
 
@@ -28,12 +28,9 @@ fn get_dict_records(filedir: &str, tokens: &Vec<String>) -> Result<Vec<DictRecor
 }
 
 fn get_num_dict_lines(filedir: &str) -> Result<usize, Error> {
-    let file = File::open(format!("{filedir}/sizes"))?;
-    let mut reader = BufReader::new(file);
-    let mut buf = String::new();
-    reader.read_line(&mut buf)?;
-    let num = buf.trim().parse().unwrap();
-    Ok(num)
+    let file_contents = fs::read_to_string(format!("{filedir}/sizes"))?;
+    let json: FileSizes = serde_json::from_str(&file_contents)?;
+    Ok(json.num_dict_lines)
 }
 
 fn get_one_dict_record(reader: &mut BufReader<File>, token: &str, dict_size: usize) -> Result<Option<DictRecord>, Error> {

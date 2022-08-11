@@ -1385,6 +1385,8 @@ name = "tokenizer"
 version = "0.1.0"
 dependencies = [
  "encoding",
+ "serde",
+ "serde_json",
  "util",
 ]
 
@@ -1582,6 +1584,8 @@ dependencies = [
  "lazy_static",
  "logos",
  "regex",
+ "serde",
+ "serde_json",
  "sha2",
 ]
 

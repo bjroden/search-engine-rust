@@ -1,6 +1,6 @@
 use std::{fs::{File, self, OpenOptions}, io::{Error, Write, BufWriter}, env};
 
-use util::{data_models::{GlobHTBucket, DocFrequency, MapRecord}, hashtable::TableEntry};
+use util::{data_models::{GlobHTBucket, DocFrequency, MapRecord, FileSizes}, hashtable::TableEntry};
 use encoding::{all::ISO_8859_1, Encoding, DecoderTrap};
 
 use util::parser::parse;
@@ -127,7 +127,8 @@ fn write_map_line(writer: &mut BufWriter<File>, name: &str) -> Result<(), Error>
 fn write_sizes(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Error> {
     let sizes_file = OpenOptions::new().write(true).create(true).truncate(true).open(format!("{outdir}/sizes"))?;
     let mut writer = BufWriter::new(sizes_file);
-    writeln!(&mut writer, "{}", glob_ht.get_size())?;
+    let sizes = serde_json::to_string(&FileSizes { num_dict_lines: glob_ht.get_size() })?;
+    writeln!(&mut writer, "{}", sizes)?;
     Ok(())
 }
 
