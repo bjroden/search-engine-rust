@@ -26,7 +26,8 @@ fn create_stop_ht(stop_path: &str) -> Result<HashTable<usize>, Error> {
     Ok(stop_ht)
 }
 
-fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, doc_ht: &mut HashTable<usize>, stop_ht: &HashTable<usize>, file_path: &str, doc_id: usize) -> Result<(), Error> {
+fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, stop_ht: &HashTable<usize>, file_path: &str, doc_id: usize) -> Result<(), Error> {
+    let mut doc_ht: HashTable<usize> = HashTable::new(DOC_HT_SIZE);
     let file_contents = read_latin1_file(file_path)?;
     let tokens = parse(&file_contents);
     let mut token_count: usize = 0;
@@ -44,7 +45,6 @@ fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, doc_ht: &mut HashTable<u
             glob_ht.insert_combine(entry.key.as_str(), file_record);
         }
     }
-    doc_ht.reset();
     Ok(())
 }
 
@@ -56,7 +56,6 @@ fn main() {
         Some(path) => path,
         None => "./stopwords"
     };
-    let mut doc_ht: HashTable<usize> = HashTable::new(DOC_HT_SIZE);
     let mut glob_ht: HashTable<GlobHTBucket> = HashTable::new(GLOB_HT_SIZE);
     let stop_ht: HashTable<usize> = create_stop_ht(&stop_path).expect("Error opening stopfile");
     let mut map_files: Vec<MapRecord> = vec![];
@@ -64,7 +63,7 @@ fn main() {
         let file_name = file_path.as_ref().unwrap().file_name().into_string().unwrap();
         let file_path_str = file_path.unwrap().path().to_str().unwrap().to_owned();
         map_files.push(MapRecord { doc_id: doc_id, file_name: file_name.clone() });
-        if let Err(e) = tokenize_file(&mut glob_ht, &mut doc_ht, &stop_ht, &file_path_str, doc_id) {
+        if let Err(e) = tokenize_file(&mut glob_ht, &stop_ht, &file_path_str, doc_id) {
             println!("Could not read file {}: {}", &file_name, e);
             continue;
         };
