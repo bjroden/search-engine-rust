@@ -1,4 +1,4 @@
-use std::{num::ParseIntError, ops::AddAssign};
+use std::{num::ParseIntError, ops::AddAssign, mem::take};
 
 use sha2::{Sha256, Digest};
 use hex;
@@ -24,8 +24,8 @@ pub struct TableEntry<T> {
 }
 
 pub struct HashTable<T> {
-    size: usize,
-    buckets: Vec<Option<TableEntry<T>>>
+    buckets: Vec<Option<TableEntry<T>>>,
+    num_elements: usize
 }
 
 impl<T> HashTable<T>
@@ -33,8 +33,32 @@ where T: Clone + AddAssign
 {
     pub fn new(size: usize) -> Self {
         Self { 
-            size: size, 
-            buckets: vec![None; size]
+            buckets: vec![None; size],
+            num_elements: 0
+        }
+    }
+
+    fn reindex(&mut self) {
+        if self.num_elements * 2 > self.buckets.len() {
+            let old_buckets = take(&mut self.buckets);
+            self.buckets = vec![None; old_buckets.len() * 2];
+            for bucket in old_buckets {
+                if let Some(entry) = bucket {
+                    self.reinsert_helper(entry);
+                }
+            }
+        }
+    }
+
+    fn reinsert_helper(&mut self, entry: TableEntry<T>) {
+        if let Ok(mut hash) = hash_function(&entry.key, &self.get_size()) {
+            while let Some(Some(bucket)) = self.buckets.get(hash) {
+                if bucket.key != entry.key { hash = rehash(&hash, &self.get_size())}
+                else { break }
+            }
+            if let Some(None) = self.buckets.get_mut(hash) {
+                self.buckets[hash] = Some(entry);
+            }
         }
     }
 
@@ -45,24 +69,30 @@ where T: Clone + AddAssign
     }
 
     pub fn insert_combine(&mut self, key: &str, value: T) {
-        if let Ok(mut hash) = hash_function(key, &self.size) {
+        self.reindex();
+        if let Ok(mut hash) = hash_function(key, &self.get_size()) {
             while let Some(Some(bucket)) = self.buckets.get(hash) {
-                if bucket.key != key { hash = rehash(&hash, &self.size)}
+                if bucket.key != key { hash = rehash(&hash, &self.get_size())}
                 else { break }
             }
             match self.buckets.get_mut(hash) {
-                Some(Some(bucket)) =>  {  bucket.value += value; }
-                Some(None) =>  {  self.buckets[hash] = Some(TableEntry { key: key.to_string(), value: value }); }
+                Some(Some(bucket)) =>  { 
+                    bucket.value += value;
+                }
+                Some(None) =>  { 
+                    self.buckets[hash] = Some(TableEntry { key: key.to_string(), value: value });
+                    self.num_elements += 1;
+                }
                 _ => ()
             }
         }
     }
 
     pub fn get(&self, key: &str) -> Option<&T> {
-        if let Ok(mut hash) = hash_function(key, &self.size) {
+        if let Ok(mut hash) = hash_function(key, &self.get_size()) {
             while let Some(Some(bucket)) = self.buckets.get(hash) {
                 if bucket.key == key { return Some(&bucket.value) }
-                else { hash = rehash(&hash, &self.size) }
+                else { hash = rehash(&hash, &self.get_size()) }
             }
         }
         None
@@ -74,6 +104,14 @@ where T: Clone + AddAssign
 
     pub fn get_buckets(&self) -> &Vec<Option<TableEntry<T>>> {
         &self.buckets
+    }
+
+    pub fn get_size(&self) -> usize {
+        self.buckets.len()
+    }
+
+    pub fn get_num_elements(&self) -> usize {
+        self.num_elements
     }
 
 }
