@@ -15,22 +15,32 @@ fn get_query_tokens(query: &str) -> Vec<String> {
 }
 
 fn get_dict_records(filedir: &str, tokens: &Vec<String>) -> Result<Vec<DictRecord>, Error> {
+    let num_lines = get_num_dict_lines(filedir)?;
     let mut records = vec![];
     let file = File::open(format!("{filedir}/dict"))?;
     let mut reader = BufReader::new(file);
     for token in tokens {
-        if let Some(record) = get_one_dict_record(&mut reader, token)? {
+        if let Some(record) = get_one_dict_record(&mut reader, token, num_lines)? {
             records.push(record);
         }
     }
     Ok(records)
 }
 
-fn get_one_dict_record(reader: &mut BufReader<File>, token: &str) -> Result<Option<DictRecord>, Error> {
-    let mut hash = hash_function(token, &GLOB_HT_SIZE).unwrap();
+fn get_num_dict_lines(filedir: &str) -> Result<usize, Error> {
+    let file = File::open(format!("{filedir}/sizes"))?;
+    let mut reader = BufReader::new(file);
+    let mut buf = String::new();
+    reader.read_line(&mut buf)?;
+    let num = buf.trim().parse().unwrap();
+    Ok(num)
+}
+
+fn get_one_dict_record(reader: &mut BufReader<File>, token: &str, dict_size: usize) -> Result<Option<DictRecord>, Error> {
+    let mut hash = hash_function(token, &dict_size).unwrap();
     let mut record = read_one_dict_line_from_hash(reader, hash)?;
     while record.term != "!NULL" && record.term != token { 
-        hash = rehash(&hash, &GLOB_HT_SIZE);
+        hash = rehash(&hash, &dict_size);
         record = read_one_dict_line_from_hash(reader, hash)?;
     }
     if record.term.starts_with("!") { return Ok(None); }

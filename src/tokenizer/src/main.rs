@@ -124,6 +124,13 @@ fn write_map_line(writer: &mut BufWriter<File>, name: &str) -> Result<(), Error>
     Ok(())
 }
 
+fn write_sizes(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Error> {
+    let sizes_file = OpenOptions::new().write(true).create(true).truncate(true).open(format!("{outdir}/sizes"))?;
+    let mut writer = BufWriter::new(sizes_file);
+    writeln!(&mut writer, "{}", glob_ht.get_size())?;
+    Ok(())
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let indir = args.get(1).expect("Indir not given");
@@ -148,4 +155,5 @@ fn main() {
     write_dict(&outdir, &glob_ht).expect("Error writing dict file");
     write_post(&outdir, &glob_ht, map_files.len()).expect("Error writing post file");
     write_map(&outdir, map_files).expect("Error writing map file");
+    write_sizes(&outdir, &glob_ht).expect("Error writing sizes file");
 }
