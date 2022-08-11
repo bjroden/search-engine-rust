@@ -86,13 +86,11 @@ fn get_sorted_results(query_ht: HashTable<usize>, num_results: usize) -> Vec<Pos
         if let Some(entry) = bucket {
             match heap.peek() {
                 Some(Reverse(heap_head)) => {
-                    if heap.len() + 1 > num_results {
-                        if heap_head.weight < entry.value { 
-                            heap.pop();
-                            heap.push(Reverse(PostRecord { doc_id: entry.key.parse().unwrap(), weight: entry.value }));
-                        }
+                    if heap.len() < num_results {
+                        heap.push(Reverse(PostRecord { doc_id: entry.key.parse().unwrap(), weight: entry.value }));
                     }
-                    else {
+                    else if heap_head.weight < entry.value {
+                        heap.pop();
                         heap.push(Reverse(PostRecord { doc_id: entry.key.parse().unwrap(), weight: entry.value }));
                     }
                 }
@@ -102,11 +100,7 @@ fn get_sorted_results(query_ht: HashTable<usize>, num_results: usize) -> Vec<Pos
     }
     let rev_sorted = heap.into_sorted_vec();
     let mut sorted = vec![];
-    for rev_elem in rev_sorted {
-        if let Reverse(elem) = rev_elem {
-            sorted.push(elem.clone());
-        }
-    }
+    for Reverse(elem) in rev_sorted { sorted.push(elem); }
     sorted
 }
 
