@@ -1,10 +1,17 @@
+use rocket::fs::NamedFile;
 use util::read_query_files::make_query;
 use web_result::get_web_results;
-use std::env;
+use std::{env, path::{PathBuf, Path}};
 
 mod web_result;
 
 #[macro_use] extern crate rocket;
+
+#[get("/files/<file..>")]
+async fn files(file: PathBuf) -> Option<NamedFile> {
+    let static_file_dir = env::var("STATIC_FILES_DIR").unwrap_or("static".to_string());
+    NamedFile::open(Path::new(&static_file_dir).join(file)).await.ok()
+}
 
 #[get("/?<query>&<num_results>")]
 fn index(query: Option<String>, num_results: Option<usize>) -> String {
@@ -17,5 +24,5 @@ fn index(query: Option<String>, num_results: Option<usize>) -> String {
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![index])
+    rocket::build().mount("/", routes![index, files])
 }
