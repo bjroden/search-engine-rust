@@ -1,6 +1,7 @@
 use std::sync::{Mutex, Arc};
-use std::{fs, io::Error, env};
+use std::{fs, io::Error};
 
+use clap::Parser;
 use threadpool::ThreadPool;
 use util::data_models::{GlobHTBucket, MapRecord};
 use encoding::{all::ISO_8859_1, Encoding, DecoderTrap};
@@ -54,19 +55,29 @@ fn insert_doc_into_glob(glob_ht: Arc<Mutex<HashTable<GlobHTBucket>>>, doc_ht: Ha
     }
 }
 
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    #[clap(short, long, value_parser)]
+    indir: String,
+
+    #[clap(short, long, value_parser)]
+    outdir: String,
+
+    #[clap(short, long, value_parser)]
+    stop_path: String,
+
+    #[clap(short, long, value_parser, default_value_t = num_cpus::get())]
+    num_threads: usize
+}
+
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let indir = args.get(1).expect("Indir not given");
-    let outdir = args.get(2).expect("Outdir not given");
-    let stop_path = match args.get(3) {
-        Some(path) => path,
-        None => "./stopwords"
-    };
+    let args = Args::parse();
     let glob_ht: Arc<Mutex<HashTable<GlobHTBucket>>> = Arc::new(Mutex::new(HashTable::new(GLOB_HT_SIZE)));
-    let stop_ht: Arc<HashTable<usize>> = Arc::new(create_stop_ht(&stop_path).expect("Error opening stopfile"));
+    let stop_ht: Arc<HashTable<usize>> = Arc::new(create_stop_ht(&args.stop_path).expect("Error opening stopfile"));
     let mut map_files: Vec<MapRecord> = vec![];
-    let pool = ThreadPool::new(num_cpus::get());
-    for (doc_id, file_path) in fs::read_dir(indir).expect("Could not read indir").enumerate() {
+    let pool = ThreadPool::new(args.num_threads);
+    for (doc_id, file_path) in fs::read_dir(&args.indir).expect("Could not read indir").enumerate() {
         let file_name = file_path.as_ref().unwrap().file_name().into_string().unwrap();
         let file_path_str = file_path.unwrap().path().to_str().unwrap().to_owned();
         map_files.push(MapRecord { doc_id: doc_id, file_name: file_name.clone() });
@@ -80,5 +91,5 @@ fn main() {
         });
     }
     pool.join();
-    write_output_files(outdir, &glob_ht.lock().unwrap(), &map_files).unwrap();
+    write_output_files(&args.outdir, &glob_ht.lock().unwrap(), &map_files).unwrap();
 }

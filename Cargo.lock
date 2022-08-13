@@ -1393,6 +1393,7 @@ checksum = "42657b1a6f4d817cda8e7a0ace261fe0cc946cf3a80314390b22cc61ae080792"
 name = "tokenizer"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "encoding",
  "num_cpus",
  "threadpool",

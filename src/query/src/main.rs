@@ -1,6 +1,7 @@
 
 use clap::Parser;
 use util::read_query_files::make_query;
+
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
