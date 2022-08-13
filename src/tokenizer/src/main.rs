@@ -28,7 +28,7 @@ fn create_stop_ht(stop_path: &str) -> Result<HashTable<usize>, Error> {
     Ok(stop_ht)
 }
 
-fn tokenize_file(glob_ht: Arc<Mutex<HashTable<GlobHTBucket>>>, stop_ht: &HashTable<usize>, file_path: &str, doc_id: usize) -> Result<(), Error> {
+fn tokenize_file(stop_ht: &HashTable<usize>, file_path: &str) -> Result<(HashTable<usize>, usize), Error> {
     let mut doc_ht: HashTable<usize> = HashTable::new(DOC_HT_SIZE);
     let file_contents = read_latin1_file(file_path)?;
     let tokens = parse(&file_contents);
@@ -39,6 +39,10 @@ fn tokenize_file(glob_ht: Arc<Mutex<HashTable<GlobHTBucket>>>, stop_ht: &HashTab
             token_count += 1;
         }
     }
+    Ok((doc_ht, token_count))
+}
+
+fn insert_doc_into_glob(glob_ht: Arc<Mutex<HashTable<GlobHTBucket>>>, doc_ht: HashTable<usize>, token_count: usize, doc_id: usize) {
     for bucket in doc_ht.get_buckets() {
         if let Some(entry) = bucket  {
             let raw_term_frequency: usize = entry.value;
@@ -48,7 +52,6 @@ fn tokenize_file(glob_ht: Arc<Mutex<HashTable<GlobHTBucket>>>, stop_ht: &HashTab
             glob_ht.insert_combine(entry.key.as_str(), file_record);
         }
     }
-    Ok(())
 }
 
 fn main() {
@@ -70,8 +73,9 @@ fn main() {
         let glob_ht_clone = Arc::clone(&glob_ht);
         let stop_ht_clone = Arc::clone(&stop_ht);
         let handle = thread::spawn(move||{
-            if let Err(e) = tokenize_file(glob_ht_clone, &stop_ht_clone, &file_path_str, doc_id) {
-                println!("Could not read file {}: {}", &file_name, e);
+            match tokenize_file(&stop_ht_clone, &file_path_str) {
+                Ok((doc_ht, token_count)) => insert_doc_into_glob(glob_ht_clone, doc_ht, token_count, doc_id),
+                Err(e) => println!("Could not read file {}: {}", &file_name, e),
             };
         });
         handles.push(handle);
