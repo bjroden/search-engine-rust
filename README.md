@@ -14,6 +14,7 @@ There are three main programs: the tokenizer, the query program, and the server.
 ### Tokenizer
 The tokenizer will take an input directory, an output directory, and a stopword file as inputs. All files in the input will be indexed and a file mapping will be made
 in the output directory, which can then be used by the other two programs. The stopwords file is a list of common words that you do not wish to be indexed.
+The number of threads to use for tokenizing can also be specified, with your cpu thread count being the default.
 
 ### Query
 A CLI to get the top file results for each query. Pass it the directory for the file mapping with the -d flag and the string query with the -q flag.
