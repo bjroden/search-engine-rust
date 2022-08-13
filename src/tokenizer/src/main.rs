@@ -1,3 +1,5 @@
+use std::sync::{Mutex, Arc};
+use std::thread;
 use std::{fs, io::Error, env};
 
 use util::data_models::{GlobHTBucket, MapRecord};
@@ -26,7 +28,7 @@ fn create_stop_ht(stop_path: &str) -> Result<HashTable<usize>, Error> {
     Ok(stop_ht)
 }
 
-fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, stop_ht: &HashTable<usize>, file_path: &str, doc_id: usize) -> Result<(), Error> {
+fn tokenize_file(glob_ht: Arc<Mutex<HashTable<GlobHTBucket>>>, stop_ht: &HashTable<usize>, file_path: &str, doc_id: usize) -> Result<(), Error> {
     let mut doc_ht: HashTable<usize> = HashTable::new(DOC_HT_SIZE);
     let file_contents = read_latin1_file(file_path)?;
     let tokens = parse(&file_contents);
@@ -42,6 +44,7 @@ fn tokenize_file(glob_ht: &mut HashTable<GlobHTBucket>, stop_ht: &HashTable<usiz
             let raw_term_frequency: usize = entry.value;
             let relative_term_frequency: f64 = raw_term_frequency as f64 / token_count as f64;
             let file_record = GlobHTBucket::new(doc_id, raw_term_frequency, relative_term_frequency);
+            let mut glob_ht = glob_ht.lock().unwrap();
             glob_ht.insert_combine(entry.key.as_str(), file_record);
         }
     }
@@ -56,17 +59,25 @@ fn main() {
         Some(path) => path,
         None => "./stopwords"
     };
-    let mut glob_ht: HashTable<GlobHTBucket> = HashTable::new(GLOB_HT_SIZE);
-    let stop_ht: HashTable<usize> = create_stop_ht(&stop_path).expect("Error opening stopfile");
+    let glob_ht: Arc<Mutex<HashTable<GlobHTBucket>>> = Arc::new(Mutex::new(HashTable::new(GLOB_HT_SIZE)));
+    let stop_ht: Arc<HashTable<usize>> = Arc::new(create_stop_ht(&stop_path).expect("Error opening stopfile"));
     let mut map_files: Vec<MapRecord> = vec![];
+    let mut handles = vec![];
     for (doc_id, file_path) in fs::read_dir(indir).expect("Could not read indir").enumerate() {
         let file_name = file_path.as_ref().unwrap().file_name().into_string().unwrap();
         let file_path_str = file_path.unwrap().path().to_str().unwrap().to_owned();
         map_files.push(MapRecord { doc_id: doc_id, file_name: file_name.clone() });
-        if let Err(e) = tokenize_file(&mut glob_ht, &stop_ht, &file_path_str, doc_id) {
-            println!("Could not read file {}: {}", &file_name, e);
-            continue;
-        };
+        let glob_ht_clone = Arc::clone(&glob_ht);
+        let stop_ht_clone = Arc::clone(&stop_ht);
+        let handle = thread::spawn(move||{
+            if let Err(e) = tokenize_file(glob_ht_clone, &stop_ht_clone, &file_path_str, doc_id) {
+                println!("Could not read file {}: {}", &file_name, e);
+            };
+        });
+        handles.push(handle);
     }
-    write_output_files(outdir, &glob_ht, &map_files).unwrap();
+    for handle in handles {
+        handle.join().unwrap();
+    }
+    write_output_files(outdir, &glob_ht.lock().unwrap(), &map_files).unwrap();
 }
