@@ -1,7 +1,7 @@
 use std::sync::{Mutex, Arc};
-use std::thread;
 use std::{fs, io::Error, env};
 
+use threadpool::ThreadPool;
 use util::data_models::{GlobHTBucket, MapRecord};
 use encoding::{all::ISO_8859_1, Encoding, DecoderTrap};
 
@@ -65,23 +65,20 @@ fn main() {
     let glob_ht: Arc<Mutex<HashTable<GlobHTBucket>>> = Arc::new(Mutex::new(HashTable::new(GLOB_HT_SIZE)));
     let stop_ht: Arc<HashTable<usize>> = Arc::new(create_stop_ht(&stop_path).expect("Error opening stopfile"));
     let mut map_files: Vec<MapRecord> = vec![];
-    let mut handles = vec![];
+    let pool = ThreadPool::new(num_cpus::get());
     for (doc_id, file_path) in fs::read_dir(indir).expect("Could not read indir").enumerate() {
         let file_name = file_path.as_ref().unwrap().file_name().into_string().unwrap();
         let file_path_str = file_path.unwrap().path().to_str().unwrap().to_owned();
         map_files.push(MapRecord { doc_id: doc_id, file_name: file_name.clone() });
         let glob_ht_clone = Arc::clone(&glob_ht);
         let stop_ht_clone = Arc::clone(&stop_ht);
-        let handle = thread::spawn(move||{
+        pool.execute(move || {
             match tokenize_file(&stop_ht_clone, &file_path_str) {
                 Ok((doc_ht, token_count)) => insert_doc_into_glob(glob_ht_clone, doc_ht, token_count, doc_id),
                 Err(e) => println!("Could not read file {}: {}", &file_name, e),
             };
         });
-        handles.push(handle);
     }
-    for handle in handles {
-        handle.join().unwrap();
-    }
+    pool.join();
     write_output_files(outdir, &glob_ht.lock().unwrap(), &map_files).unwrap();
 }

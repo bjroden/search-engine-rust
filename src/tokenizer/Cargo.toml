@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 util = { path = "../util" }
 encoding = "0.2.33"
+threadpool = "1.8.1"
+num_cpus = "1.13.1"
