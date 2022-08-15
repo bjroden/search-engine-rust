@@ -1,6 +1,7 @@
 use logos::{Logos};
 use regex::Regex;
 use lazy_static::lazy_static;
+use crate::constants::*;
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token<'a> {
@@ -82,13 +83,15 @@ pub fn parse(text: &str) -> Vec<String> {
     let mut vector = vec![];
     let mut lex = Token::lexer(text);
     while let Some(tok) = lex.next() {
-        match tok {
-            Token::HYPERLINK(token) => vector.push(clean_link(token)),
-            Token::EMAIL(token) => vector.push(clean_email(token)),
-            Token::NUMBER(token) => vector.push(clean_number(token)),
-            Token::WORD(token) => vector.push(clean_word(token)),
-            _ => ()
-        }
+        let mut cleaned_tok = match tok {
+            Token::HYPERLINK(token) => clean_link(token),
+            Token::EMAIL(token) => clean_email(token),
+            Token::NUMBER(token) => clean_number(token),
+            Token::WORD(token) => clean_word(token),
+            _ => continue
+        };
+        cleaned_tok.truncate(TERM_LENGTH);
+        vector.push(cleaned_tok);
     }
     vector
 }
