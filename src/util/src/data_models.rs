@@ -1,6 +1,7 @@
 use std::ops::AddAssign;
 use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
+use crate::constants::*;
 
 pub struct NamedResult {
     pub name: String,
@@ -51,7 +52,14 @@ pub struct MapRecord {
 
 #[derive(Serialize, Deserialize)]
 pub struct FileSizes {
-    pub num_dict_lines: usize
+    pub num_dict_lines: usize,
+    pub post_line_start_length: usize
+}
+
+impl FileSizes {
+    pub fn get_dict_record_size(&self) -> usize {
+        TERM_LENGTH + NUMDOCS_LENGTH + self.post_line_start_length + 3
+    }
 }
 
 #[derive(Clone)]

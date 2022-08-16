@@ -14,38 +14,37 @@ fn get_query_tokens(query: &str) -> Vec<String> {
     return parse(query);
 }
 
-fn get_dict_records(filedir: &str, tokens: &Vec<String>) -> Result<Vec<DictRecord>, Error> {
-    let num_lines = get_num_dict_lines(filedir)?;
+fn get_sizes(filedir: &str) -> Result<FileSizes, Error> {
+    let file_contents = fs::read_to_string(format!("{filedir}/sizes"))?;
+    let sizes: FileSizes = serde_json::from_str(&file_contents)?;
+    Ok(sizes)
+}
+
+fn get_dict_records(filedir: &str, tokens: &Vec<String>, sizes: &FileSizes) -> Result<Vec<DictRecord>, Error> {
     let mut records = vec![];
     let file = File::open(format!("{filedir}/dict"))?;
     let mut reader = BufReader::new(file);
     for token in tokens {
-        if let Some(record) = get_one_dict_record(&mut reader, token, num_lines)? {
+        if let Some(record) = get_one_dict_record(&mut reader, token, &sizes)? {
             records.push(record);
         }
     }
     Ok(records)
 }
 
-fn get_num_dict_lines(filedir: &str) -> Result<usize, Error> {
-    let file_contents = fs::read_to_string(format!("{filedir}/sizes"))?;
-    let json: FileSizes = serde_json::from_str(&file_contents)?;
-    Ok(json.num_dict_lines)
-}
-
-fn get_one_dict_record(reader: &mut BufReader<File>, token: &str, dict_size: usize) -> Result<Option<DictRecord>, Error> {
-    let mut hash = hash_function(token, &dict_size).unwrap();
-    let mut record = read_one_dict_line_from_hash(reader, hash)?;
+fn get_one_dict_record(reader: &mut BufReader<File>, token: &str, sizes: &FileSizes) -> Result<Option<DictRecord>, Error> {
+    let mut hash = hash_function(token, &sizes.num_dict_lines).unwrap();
+    let mut record = read_one_dict_line_from_hash(reader, &sizes, hash)?;
     while record.term != "!NULL" && record.term != token { 
-        hash = rehash(&hash, &dict_size);
-        record = read_one_dict_line_from_hash(reader, hash)?;
+        hash = rehash(&hash, &sizes.num_dict_lines);
+        record = read_one_dict_line_from_hash(reader, &sizes, hash)?;
     }
     if record.term.starts_with("!") { return Ok(None); }
     Ok(Some(record))
 }
 
-fn read_one_dict_line_from_hash(reader: &mut BufReader<File>, hash: usize) -> Result<DictRecord, Error> {
-    reader.seek(SeekFrom::Start((hash * DICT_RECORD_SIZE).try_into().unwrap()))?;
+fn read_one_dict_line_from_hash(reader: &mut BufReader<File>, sizes: &FileSizes, hash: usize) -> Result<DictRecord, Error> {
+    reader.seek(SeekFrom::Start((hash * sizes.get_dict_record_size()).try_into().unwrap()))?;
     let mut record_str = String::new();
     reader.read_line(&mut record_str)?;
     let split_record: Vec<&str> = record_str.split_whitespace().collect();
@@ -129,8 +128,9 @@ fn get_doc_name(reader: &mut BufReader<File>, doc_id: usize) -> Result<String, E
 }
 
 pub fn make_query(query: &str, filedir: &str, num_results: usize) -> Result<Vec<NamedResult>, Error> {
+    let sizes = get_sizes(filedir)?;
     let tokens = get_query_tokens(query);
-    let dict_records = get_dict_records(filedir, &tokens)?;
+    let dict_records = get_dict_records(filedir, &tokens, &sizes)?;
     let expected_docs = dict_records.iter().fold(0, |sum, record| sum + record.num_docs);
     let post_records = get_all_post_records(filedir, &dict_records)?;
     let query_ht = make_query_ht(&post_records, expected_docs);
