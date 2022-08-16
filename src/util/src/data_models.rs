@@ -56,6 +56,7 @@ pub struct FileSizes {
     pub post_line_start_length: usize,
     pub num_docs_length: usize,
     pub doc_id_length: usize,
+    pub weight_length: usize,
     pub map_name_length: usize
 }
 
@@ -66,6 +67,7 @@ impl FileSizes {
             post_line_start_length: Self::calculate_post_line_start_length(&glob_ht),
             num_docs_length: Self::calculate_num_docs_length(&glob_ht),
             doc_id_length: map_files.len().to_string().len(),
+            weight_length: Self::calculate_weight_length(&map_files),
             map_name_length: Self::calculate_map_name_length(&map_files)
         }
     }
@@ -75,7 +77,7 @@ impl FileSizes {
     }
 
     pub fn get_post_record_size(&self) -> usize {
-        self.doc_id_length + WEIGHT_LENGTH + 2
+        self.doc_id_length + self.weight_length + 2
     }
 
     pub fn get_map_record_size(&self) -> usize {
@@ -96,6 +98,12 @@ impl FileSizes {
             None => 0
         });
         num_post_records.to_string().len()
+    }
+
+    fn calculate_weight_length(map_files: &Vec<MapRecord>) -> usize {
+        let max_idf = 1.0 + (map_files.len() as f64).log10();
+        let max_weight = (max_idf * WEIGHT_MULTIPLIER) as usize;
+        max_weight.to_string().len()
     }
 
     fn calculate_map_name_length(map_files: &Vec<MapRecord>) -> usize {

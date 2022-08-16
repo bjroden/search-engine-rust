@@ -60,7 +60,7 @@ fn write_post_line(writer: &mut BufWriter<File>, file: &DocFrequency, sizes: &Fi
         "{:<doc_id_length$.doc_id_length$} {:<weight_length$.weight_length$}",
         doc_id.to_string(), weight.to_string(),
         doc_id_length = sizes.doc_id_length,
-        weight_length = WEIGHT_LENGTH
+        weight_length = sizes.weight_length
     )?;
     Ok(())
 }
