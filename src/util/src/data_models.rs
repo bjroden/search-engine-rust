@@ -1,7 +1,7 @@
 use std::ops::AddAssign;
 use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
-use crate::constants::*;
+use crate::{constants::*, hashtable::HashTable};
 
 pub struct NamedResult {
     pub name: String,
@@ -57,8 +57,23 @@ pub struct FileSizes {
 }
 
 impl FileSizes {
+    pub fn new(glob_ht: &HashTable<GlobHTBucket>, map_files: &Vec<MapRecord>) -> Self {
+        Self {
+            num_dict_lines: glob_ht.get_size(),
+            post_line_start_length: Self::calculate_post_line_start_length(&glob_ht)
+        }
+    }
+
     pub fn get_dict_record_size(&self) -> usize {
         TERM_LENGTH + NUMDOCS_LENGTH + self.post_line_start_length + 3
+    }
+
+    fn calculate_post_line_start_length(glob_ht: &HashTable<GlobHTBucket>) -> usize {
+        let num_post_records = glob_ht.get_buckets().iter().fold(0, |sum, bucket| sum + match bucket {
+            Some(entry) => entry.value.get_files().len(),
+            None => 0
+        });
+        num_post_records.to_string().len()
     }
 }
 
