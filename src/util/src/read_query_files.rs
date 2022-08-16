@@ -8,7 +8,6 @@ use std::vec;
 use crate::parser::parse;
 use crate::data_models::{DictRecord, PostRecord, NamedResult, FileSizes};
 use crate::hashtable::{hash_function, rehash, HashTable};
-use crate::constants::*;
 
 fn get_query_tokens(query: &str) -> Vec<String> {
     return parse(query);
@@ -110,19 +109,19 @@ fn get_sorted_results(query_ht: HashTable<usize>, num_results: usize) -> Vec<Pos
     sorted
 }
 
-fn get_named_results(filedir: &str, results: Vec<PostRecord>) -> Result<Vec<NamedResult>, Error> {
+fn get_named_results(filedir: &str, results: Vec<PostRecord>, sizes: &FileSizes) -> Result<Vec<NamedResult>, Error> {
     let mut named_results = vec![];
     let file = File::open(format!("{filedir}/map"))?;
     let mut reader = BufReader::new(file);
     for result in results {
-        named_results.push(NamedResult { name: get_doc_name(&mut reader, result.doc_id)?, weight: result.weight })
+        named_results.push(NamedResult { name: get_doc_name(&mut reader, result.doc_id, sizes)?, weight: result.weight })
     }
     Ok(named_results)
 }
 
-fn get_doc_name(reader: &mut BufReader<File>, doc_id: usize) -> Result<String, Error> {
+fn get_doc_name(reader: &mut BufReader<File>, doc_id: usize, sizes: &FileSizes) -> Result<String, Error> {
     let mut name = String::new();
-    reader.seek(SeekFrom::Start((doc_id * MAP_RECORD_SIZE).try_into().unwrap()))?;
+    reader.seek(SeekFrom::Start((doc_id * sizes.get_map_record_size()).try_into().unwrap()))?;
     reader.read_line(&mut name)?;
     Ok(name.trim().to_string())
 }
@@ -135,5 +134,5 @@ pub fn make_query(query: &str, filedir: &str, num_results: usize) -> Result<Vec<
     let post_records = get_all_post_records(filedir, &dict_records, &sizes)?;
     let query_ht = make_query_ht(&post_records, expected_docs);
     let sorted_results = get_sorted_results(query_ht, num_results);
-    get_named_results(filedir, sorted_results)
+    get_named_results(filedir, sorted_results, &sizes)
 }

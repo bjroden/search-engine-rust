@@ -55,7 +55,8 @@ pub struct FileSizes {
     pub num_dict_lines: usize,
     pub post_line_start_length: usize,
     pub num_docs_length: usize,
-    pub doc_id_length: usize
+    pub doc_id_length: usize,
+    pub map_name_length: usize
 }
 
 impl FileSizes {
@@ -64,7 +65,8 @@ impl FileSizes {
             num_dict_lines: glob_ht.get_size(),
             post_line_start_length: Self::calculate_post_line_start_length(&glob_ht),
             num_docs_length: Self::calculate_num_docs_length(&glob_ht),
-            doc_id_length: map_files.len().to_string().len()
+            doc_id_length: map_files.len().to_string().len(),
+            map_name_length: Self::calculate_map_name_length(&map_files)
         }
     }
 
@@ -74,6 +76,10 @@ impl FileSizes {
 
     pub fn get_post_record_size(&self) -> usize {
         self.doc_id_length + WEIGHT_LENGTH + 2
+    }
+
+    pub fn get_map_record_size(&self) -> usize {
+        self.map_name_length + 1
     }
 
     fn calculate_num_docs_length(glob_ht: &HashTable<GlobHTBucket>) -> usize {
@@ -90,6 +96,10 @@ impl FileSizes {
             None => 0
         });
         num_post_records.to_string().len()
+    }
+
+    fn calculate_map_name_length(map_files: &Vec<MapRecord>) -> usize {
+        map_files.iter().max_by_key(|record| record.file_name.len()).unwrap().file_name.len()
     }
 }
 

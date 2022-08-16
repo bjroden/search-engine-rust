@@ -66,17 +66,17 @@ fn write_post_line(writer: &mut BufWriter<File>, file: &DocFrequency, sizes: &Fi
 }
 
 
-fn write_map(outdir: &str, docs: &Vec<MapRecord>) -> Result<(), Error> {
+fn write_map(outdir: &str, docs: &Vec<MapRecord>, sizes: &FileSizes) -> Result<(), Error> {
     let map_file = OpenOptions::new().write(true).create(true).truncate(true).open(format!("{outdir}/map"))?;
     let mut writer = BufWriter::new(map_file);
     for doc in docs {
-        write_map_line(&mut writer, &doc.file_name)?;
+        write_map_line(&mut writer, &doc.file_name, sizes)?;
     }
     Ok(())
 }
 
-fn write_map_line(writer: &mut BufWriter<File>, name: &str) -> Result<(), Error> {
-    writeln!(writer, "{:<length$.length$}", name, length=MAP_NAME_LENGTH)?;
+fn write_map_line(writer: &mut BufWriter<File>, name: &str, sizes: &FileSizes) -> Result<(), Error> {
+    writeln!(writer, "{:<length$.length$}", name, length=sizes.map_name_length)?;
     Ok(())
 }
 
@@ -93,6 +93,6 @@ pub fn write_output_files(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, map_f
     write_sizes(&outdir, &sizes)?;
     write_dict(&outdir, &glob_ht, &sizes)?;
     write_post(&outdir, &glob_ht, &sizes, map_files.len())?;
-    write_map(&outdir, &map_files)?;
+    write_map(&outdir, &map_files, &sizes)?;
     Ok(())
 }
