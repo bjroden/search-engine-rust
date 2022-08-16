@@ -62,19 +62,19 @@ fn make_query_ht(post_records: &Vec<PostRecord>, expected_docs: usize) -> HashTa
     query_ht
 }
 
-fn get_all_post_records(filedir: &str, dict_records: &Vec<DictRecord>) -> Result<Vec<PostRecord>, Error> {
+fn get_all_post_records(filedir: &str, dict_records: &Vec<DictRecord>, sizes: &FileSizes) -> Result<Vec<PostRecord>, Error> {
     let file = File::open(format!("{filedir}/post"))?;
     let mut reader = BufReader::new(file);
     let mut post_records = vec![];
     for dict_record in dict_records {
-        post_records.append(&mut get_term_post_records(&mut reader, &dict_record)?);
+        post_records.append(&mut get_term_post_records(&mut reader, &dict_record, sizes)?);
     }
     Ok(post_records)
 }
 
-fn get_term_post_records(reader: &mut BufReader<File>, dict_record: &DictRecord) -> Result<Vec<PostRecord>, Error> {
+fn get_term_post_records(reader: &mut BufReader<File>, dict_record: &DictRecord, sizes: &FileSizes) -> Result<Vec<PostRecord>, Error> {
     let mut post_records = vec![];
-    reader.seek(SeekFrom::Start((dict_record.post_line_start * POST_RECORD_SIZE).try_into().unwrap()))?;
+    reader.seek(SeekFrom::Start((dict_record.post_line_start * sizes.get_post_record_size()).try_into().unwrap()))?;
     for _ in 0..dict_record.num_docs {
         let mut record_str = String::new();
         reader.read_line(&mut record_str)?;
@@ -132,7 +132,7 @@ pub fn make_query(query: &str, filedir: &str, num_results: usize) -> Result<Vec<
     let tokens = get_query_tokens(query);
     let dict_records = get_dict_records(filedir, &tokens, &sizes)?;
     let expected_docs = dict_records.iter().fold(0, |sum, record| sum + record.num_docs);
-    let post_records = get_all_post_records(filedir, &dict_records)?;
+    let post_records = get_all_post_records(filedir, &dict_records, &sizes)?;
     let query_ht = make_query_ht(&post_records, expected_docs);
     let sorted_results = get_sorted_results(query_ht, num_results);
     get_named_results(filedir, sorted_results)

@@ -37,7 +37,7 @@ fn write_dict_line(writer: &mut BufWriter<File>, bucket: &Option<TableEntry<Glob
     Ok(new_count)
 }
 
-fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize) -> Result<(), Error> {
+fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, sizes: &FileSizes, total_docs: usize) -> Result<(), Error> {
     let post_file = OpenOptions::new().write(true).create(true).truncate(true).open(format!("{outdir}/post"))?;
     let mut writer = BufWriter::new(post_file);
     for bucket in glob_ht.get_buckets() {
@@ -45,7 +45,7 @@ fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize
             if !entry.value.is_rare() {
                 let idf = 1.0 + (total_docs as f64 / entry.value.get_num_docs() as f64).log10();
                 for file in entry.value.get_files() {
-                    write_post_line(&mut writer, file, idf)?;
+                    write_post_line(&mut writer, file, sizes, idf)?;
                 }
             }
         }
@@ -53,13 +53,13 @@ fn write_post(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, total_docs: usize
     Ok(())
 }
 
-fn write_post_line(writer: &mut BufWriter<File>, file: &DocFrequency, idf: f64) -> Result<(), Error> {
+fn write_post_line(writer: &mut BufWriter<File>, file: &DocFrequency, sizes: &FileSizes, idf: f64) -> Result<(), Error> {
     let doc_id = file.doc_id;
     let weight = (file.relative_term_frequency * idf * WEIGHT_MULTIPLIER) as usize; 
     writeln!(writer,
         "{:<doc_id_length$.doc_id_length$} {:<weight_length$.weight_length$}",
         doc_id.to_string(), weight.to_string(),
-        doc_id_length = DOC_ID_LENGTH,
+        doc_id_length = sizes.doc_id_length,
         weight_length = WEIGHT_LENGTH
     )?;
     Ok(())
@@ -92,7 +92,7 @@ pub fn write_output_files(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, map_f
     let sizes = FileSizes::new(&glob_ht, &map_files);
     write_sizes(&outdir, &sizes)?;
     write_dict(&outdir, &glob_ht, &sizes)?;
-    write_post(&outdir, &glob_ht, map_files.len())?;
+    write_post(&outdir, &glob_ht, &sizes, map_files.len())?;
     write_map(&outdir, &map_files)?;
     Ok(())
 }

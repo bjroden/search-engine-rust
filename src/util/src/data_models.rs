@@ -54,7 +54,8 @@ pub struct MapRecord {
 pub struct FileSizes {
     pub num_dict_lines: usize,
     pub post_line_start_length: usize,
-    pub num_docs_length: usize
+    pub num_docs_length: usize,
+    pub doc_id_length: usize
 }
 
 impl FileSizes {
@@ -62,12 +63,17 @@ impl FileSizes {
         Self {
             num_dict_lines: glob_ht.get_size(),
             post_line_start_length: Self::calculate_post_line_start_length(&glob_ht),
-            num_docs_length: Self::calculate_num_docs_length(&glob_ht)
+            num_docs_length: Self::calculate_num_docs_length(&glob_ht),
+            doc_id_length: map_files.len().to_string().len()
         }
     }
 
     pub fn get_dict_record_size(&self) -> usize {
         TERM_LENGTH + self.num_docs_length + self.post_line_start_length + 3
+    }
+
+    pub fn get_post_record_size(&self) -> usize {
+        self.doc_id_length + WEIGHT_LENGTH + 2
     }
 
     fn calculate_num_docs_length(glob_ht: &HashTable<GlobHTBucket>) -> usize {
