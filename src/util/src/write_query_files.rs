@@ -80,18 +80,25 @@ fn write_map_line(writer: &mut BufWriter<File>, name: &str) -> Result<(), Error>
     Ok(())
 }
 
-fn write_sizes(outdir: &str, glob_ht: &HashTable<GlobHTBucket>) -> Result<(), Error> {
+fn write_sizes(outdir: &str, sizes: &FileSizes) -> Result<(), Error> {
     let sizes_file = OpenOptions::new().write(true).create(true).truncate(true).open(format!("{outdir}/sizes"))?;
     let mut writer = BufWriter::new(sizes_file);
-    let sizes = serde_json::to_string(&FileSizes { num_dict_lines: glob_ht.get_size() })?;
+    let sizes = serde_json::to_string(sizes)?;
     writeln!(&mut writer, "{}", sizes)?;
     Ok(())
 }
 
+fn get_sizes(glob_ht: &HashTable<GlobHTBucket>, map_files: &Vec<MapRecord>) -> FileSizes {
+    FileSizes {
+        num_dict_lines: glob_ht.get_size()
+    }
+}
+
 pub fn write_output_files(outdir: &str, glob_ht: &HashTable<GlobHTBucket>, map_files: &Vec<MapRecord>) -> Result<(), Error> {
+    let sizes = get_sizes(&glob_ht, &map_files);
+    write_sizes(&outdir, &sizes)?;
     write_dict(&outdir, &glob_ht)?;
     write_post(&outdir, &glob_ht, map_files.len())?;
     write_map(&outdir, &map_files)?;
-    write_sizes(&outdir, &glob_ht)?;
     Ok(())
 }
