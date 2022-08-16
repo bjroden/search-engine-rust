@@ -31,7 +31,7 @@ fn write_dict_line(writer: &mut BufWriter<File>, bucket: &Option<TableEntry<Glob
             "{:<term_length$.term_length$} {:<num_docs_length$.num_docs_length$} {:<start_length$.start_length$}",
             term, num_docs.to_string(), post_line_start.to_string(),
             term_length = TERM_LENGTH,
-            num_docs_length = NUMDOCS_LENGTH,
+            num_docs_length = sizes.num_docs_length,
             start_length = sizes.post_line_start_length
     )?;
     Ok(new_count)

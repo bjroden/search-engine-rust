@@ -1,4 +1,4 @@
-use std::ops::AddAssign;
+use std::{ops::AddAssign, cmp};
 use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
 use crate::{constants::*, hashtable::HashTable};
@@ -53,19 +53,29 @@ pub struct MapRecord {
 #[derive(Serialize, Deserialize)]
 pub struct FileSizes {
     pub num_dict_lines: usize,
-    pub post_line_start_length: usize
+    pub post_line_start_length: usize,
+    pub num_docs_length: usize
 }
 
 impl FileSizes {
     pub fn new(glob_ht: &HashTable<GlobHTBucket>, map_files: &Vec<MapRecord>) -> Self {
         Self {
             num_dict_lines: glob_ht.get_size(),
-            post_line_start_length: Self::calculate_post_line_start_length(&glob_ht)
+            post_line_start_length: Self::calculate_post_line_start_length(&glob_ht),
+            num_docs_length: Self::calculate_num_docs_length(&glob_ht)
         }
     }
 
     pub fn get_dict_record_size(&self) -> usize {
-        TERM_LENGTH + NUMDOCS_LENGTH + self.post_line_start_length + 3
+        TERM_LENGTH + self.num_docs_length + self.post_line_start_length + 3
+    }
+
+    fn calculate_num_docs_length(glob_ht: &HashTable<GlobHTBucket>) -> usize {
+        let num_docs_max = glob_ht.get_buckets().iter().fold(0, |max, bucket| cmp::max(max, match bucket {
+            Some(entry) => entry.value.get_num_docs(),
+            None => 0 
+        }));
+        num_docs_max.to_string().len()
     }
 
     fn calculate_post_line_start_length(glob_ht: &HashTable<GlobHTBucket>) -> usize {

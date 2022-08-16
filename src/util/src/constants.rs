@@ -2,7 +2,6 @@ pub const DOC_HT_SIZE: usize = 50000;
 pub const GLOB_HT_SIZE: usize = 350000;
 pub const WEIGHT_MULTIPLIER: f64 = 100000000.0;
 pub const TERM_LENGTH: usize = 16;
-pub const NUMDOCS_LENGTH: usize = 4;
 pub const DOC_ID_LENGTH: usize = 3;
 pub const WEIGHT_LENGTH: usize = 9;
 pub const MAP_NAME_LENGTH: usize = 13;
